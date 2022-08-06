@@ -1,0 +1,11 @@
+Package: tempeRing
+Type: Package
+Title: Tempering MCMC Methods
+Version: 0.1.0
+Author: Fernando Antonio Zepeda Herrera
+Maintainer: Fernando Antonio Zepeda Herrera <Fernando.Zepeda@warwick.ac.uk>
+Description: The goal of tempeRing is to provide an R package for my Summer Tempering project at the Warwick Statistics CDT. The package allows a user to run several MCMC methods, with a focus in Parallel Tempering and Annealing for multimodal targets. 
+    Available methods include both non-reversible and reversible swap dynamics for Parallel Tempering/Replica Exchange and Annealed Leap-Point Sampling (ALPS), as well as Simulated Tempering and Random Walk Metropolis. 
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
