@@ -9,3 +9,5 @@ Description: The goal of tempeRing is to provide an R package for my Summer Temp
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
+URL: https://github.com/fazepher/tempeRing
+BugReports: https://github.com/fazepher/tempeRing/issues
