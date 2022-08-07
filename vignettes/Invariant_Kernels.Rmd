@@ -25,9 +25,9 @@ $$A_X := \Omega_Y \mapsto \mathcal{F}_X \text{ such that } A_X(y) = \left\lbrace
 
 $$\mu(A) = \int\limits_{A_Y} \mu_{X|Y}(A_X(y)|Y=y) d\mu_Y$$
 
-### Invariance property
+## Invariance property
 
-A Markov kernel $P$ is $\mu$-invariant if and only if $\mu(A) = \int P(z,A)d\mu$
+A Markov kernel $P$ is $\mu$-invariant if and only if $\mu(A) = \int P(A|z)d\mu$
 
 ### Single component invariance
 
@@ -35,7 +35,7 @@ Let $P_{X|Y}[x,A_X(y)]$ be a Markov kernel and define the corresponding single c
 Then,
 $$P_{X|Y}[x,A_X(y)] \text{ is } \mu_{X|Y}\text{-invariant} \;\Longrightarrow\; P[(x,y),A] \text{ is } \mu_\text{-invariant}$$
 
-**Proof**
+Indeed,
 $$\begin{split}
 \int P[(x,y),A]d\mu &= \int\limits_{\Omega_Y}\int\limits_{\Omega_X}P[(x,y),A]d\mu_{\scriptsize{X|Y=y}}d\mu_{\scriptsize{Y}} \\
 &= \int\limits_{\Omega_Y}\delta_y(A_Y)\int\limits_{\Omega_X} P_{X|Y}[x,A_X(y)]d\mu_{\scriptsize{X|Y=y}}\;d\mu_{\scriptsize{Y}}\\
@@ -43,5 +43,17 @@ $$\begin{split}
 &=\int\limits_{A_Y}\mu_{\scriptsize{X|Y}}(A_X(y)|Y=y)d\mu_{\scriptsize{Y}} = \mu(A)
 \end{split}$$
 
-## Composition invariance
+### Composition invariance
 
+We can compose invariant kernels and mantain invariance. Let $P_1$ and $P_2$ be two $\mu$-invariant kernels and define:
+$$P_1P_2(z,A) = \int\limits_\Omega P_2(\tilde{z},A)P_1(z,d\tilde{z})$$
+To see that invariance is kept: 
+$$\begin{split}
+\int\limits_\Omega P_1P_2(z,A)\mu(dz) &= \int\limits_\Omega\int\limits_\Omega P_2(\tilde{z},A)P_1(z,d\tilde{z})\mu(dz) \\
+&= \int\limits_\Omega P_2(\tilde{z},A)\int\limits_\Omega P_1(z,d\tilde{z})\mu(dz)\\
+&= \int\limits_\Omega P_2(\tilde{z},A)\mu(d\tilde{z}) = \mu(A)
+\end{split}$$
+
+By induction we can extend this result to $\lbrace P_k\rbrace_{k=1}^K$ $\mu$-invariant kernels, so that their compositions 
+$$\overset{\circ}{P}_k(z,A) = \begin{cases} \int\limits_\Omega P_k(\tilde{z},A)\overset{\circ}{P}_{k-1}(z,d\tilde{z}) & k=K,\dots,2 \\[0.3em] P_1(z,A) & k=1 \end{cases}$$
+are also $\mu$-invariant. 
