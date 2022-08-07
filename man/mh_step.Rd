@@ -3,6 +3,8 @@
 \name{mh_step}
 \alias{mh_step}
 \alias{metropolis_step}
+\alias{mh_sampling_step}
+\alias{metropolis_sampling_step}
 \title{Metropolis-Hastings Step}
 \usage{
 mh_step(
@@ -16,12 +18,32 @@ mh_step(
 )
 
 metropolis_step(x_curr, x_prop, l_curr, l_prop, do_checks = TRUE)
+
+mh_sampling_step(
+  x_curr,
+  l_curr,
+  l_target,
+  ...,
+  sampler,
+  sampler_args,
+  lq_sampler = NULL,
+  lq_sampler_args = NULL,
+  do_checks = TRUE
+)
+
+metropolis_sampling_step(
+  x_curr,
+  l_curr,
+  l_target,
+  ...,
+  sampler,
+  sampler_args,
+  do_checks = TRUE
+)
 }
 \arguments{
 \item{x_curr, x_prop}{Two vectors or matrices of current and proposed states. See \code{Dimension} for
-how to specify these to correctly identify the dimension of the state space. length determines the
-dimension of the state space. Alternatively, two matrices containing in its rows the states,
-and in this case the number of columns determines the dimension.}
+how to specify these to correctly identify the dimension of the state space.}
 
 \item{l_curr, l_prop}{Vectors of values of log-densities, possibly up to proportionality, of the
 current and proposed states.}
@@ -31,19 +53,52 @@ The suffix \verb{_c2p} corresponds to transitions from the \strong{c}urrent towa
 while the suffix \verb{_p2c} contains the reversed transitions. If these values are ommited (the default),
 the Hastings ratio becomes standard Metropolis.}
 
-\item{do_checks}{If TRUE (the default), run preliminary checks for arguments validity.}
+\item{do_checks}{If TRUE (the default), runs some preliminary checks for arguments validity.
+It may be set to FALSE if one is sure that the arguments are correct and doesn't want to incurr in
+slight overhead.}
+
+\item{l_target}{For \code{mh_sampling_step()}, a function that computes the log-density of the target,
+possibly up to proportionality. It must accept \code{x_curr} as its first argument and its returned
+value must be a valid corresponding \code{l_prop}.}
+
+\item{...}{Arguments to be passed on to the \code{l_target} function.}
+
+\item{sampler}{For \code{mh_sampling_step()}, a sampling function whose first argument is compatible with
+\code{x_curr} and returns appropriate \code{x_prop} states.}
+
+\item{sampler_args}{A list of further arguments to be passed on to the \code{sampler}}
+
+\item{lq_sampler}{(Optional) For \code{mh_sampling_step()}, a function that computes the transition log-densities
+for the \code{sampler()}. It first two arguments must be conformable with \code{x_curr} and \code{x_prop} as
+it will be used to compute the relevant \code{lq_c2p} and \code{lq_p2c} factors of the MH step.
+If ommited, it is assumed that it is symmetric and, hence, it's not needed.}
+
+\item{lq_sampler_args}{A list of further arguments to be passed on to \code{lq_sampler}.}
 }
 \value{
 A list containing the results of the Metropolis-Hastings step:
 \itemize{
-\item accepted: A vector specifying whether or not each of the proposals was accepted or rejected.
-\item x_next: The next values of the chain, has the same structure as the input \code{x_curr}
-\item l_next: A vector of log-density values for \code{x_next} elements.
+\item \code{accepted}:
+A vector specifying whether or not each of the proposals was accepted or rejected.
+May be useful for acceptance rate monitoring.
+\item \code{x_next}:
+The next values of the chain. This object has the same structure as the input \code{x_curr}.
+For each proposal, it contains the corresponding \code{x_prop} or \code{x_curr} values depending on
+their acceptance or rejection.
+\item \code{l_next}:
+A vector of log-density values corresponding to \code{x_next} elements.
+These may be re-used in the next iteration of a chain to avoid wasting resources in what
+usually is an expensive computation.
 }
 }
 \description{
-The \code{mh_step()} function performs a Metropolis-Hastings step on one or more states, while
-\code{metropolis_step()} is just a wrapper for symmetric transition kernels.
+Perform a Metropolis-Hastings step on one or more states.
+\itemize{
+\item If we already have proposed states and all log-density factors we can call \code{mh_step()}.
+\item If we wish to first sample a proposal and then give the step, we can use \code{mh_sampling_step()}.
+\item Both \code{metropolis_step()} and \code{metropolis_sampling_step()} are just wrappers for symmetric
+transition kernels.
+}
 }
 \section{Dimension}{
 We want to perform MH steps on \code{C} states, so all log-density inputs are vectors of length \code{C}.

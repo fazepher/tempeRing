@@ -44,8 +44,11 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 
 #' Metropolis-Hastings Step
 #'
-#' The `mh_step()` function performs a Metropolis-Hastings step on one or more states, while
-#' `metropolis_step()` is just a wrapper for symmetric transition kernels.
+#' Perform a Metropolis-Hastings step on one or more states.
+#' * If we already have proposed states and all log-density factors we can call `mh_step()`.
+#' * If we wish to first sample a proposal and then give the step, we can use `mh_sampling_step()`.
+#' * Both `metropolis_step()` and `metropolis_sampling_step()` are just wrappers for symmetric
+#' transition kernels.
 #'
 #' # Dimension
 #'
@@ -85,21 +88,29 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 #'
 #'
 #' @param x_curr,x_prop Two vectors or matrices of current and proposed states. See `Dimension` for
-#'   how to specify these to correctly identify the dimension of the state space. length determines the
-#'   dimension of the state space. Alternatively, two matrices containing in its rows the states,
-#'   and in this case the number of columns determines the dimension.
+#'   how to specify these to correctly identify the dimension of the state space.
 #' @param l_curr,l_prop Vectors of values of log-densities, possibly up to proportionality, of the
 #'   current and proposed states.
 #' @param lq_c2p,lq_p2c (Optional) Vectors of transition log-densities, possibly up to proportionality.
 #'   The suffix `_c2p` corresponds to transitions from the **c**urrent towards the **p**roposed state(s),
 #'   while the suffix `_p2c` contains the reversed transitions. If these values are ommited (the default),
 #'   the Hastings ratio becomes standard Metropolis.
-#' @param do_checks If TRUE (the default), run preliminary checks for arguments validity.
+#' @param do_checks If TRUE (the default), runs some preliminary checks for arguments validity.
+#'    It may be set to FALSE if one is sure that the arguments are correct and doesn't want to incurr in
+#'    slight overhead.
 #'
 #' @return A list containing the results of the Metropolis-Hastings step:
-#' * accepted: A vector specifying whether or not each of the proposals was accepted or rejected.
-#' * x_next: The next values of the chain, has the same structure as the input `x_curr`
-#' * l_next: A vector of log-density values for `x_next` elements.
+#' * `accepted`:
+#'    A vector specifying whether or not each of the proposals was accepted or rejected.
+#'    May be useful for acceptance rate monitoring.
+#' * `x_next`:
+#'    The next values of the chain. This object has the same structure as the input `x_curr`.
+#'    For each proposal, it contains the corresponding `x_prop` or `x_curr` values depending on
+#'    their acceptance or rejection.
+#' * `l_next`:
+#'    A vector of log-density values corresponding to `x_next` elements.
+#'    These may be re-used in the next iteration of a chain to avoid wasting resources in what
+#'    usually is an expensive computation.
 #'
 #' @export
 #'
@@ -158,5 +169,57 @@ mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_c
 metropolis_step <- function(x_curr, x_prop, l_curr, l_prop, do_checks = TRUE){
 
   mh_step(x_curr, x_prop, l_curr, l_prop, do_checks = do_checks)
+
+}
+
+#' Sample and perform a Metropolis-Hasting Step
+#'
+#' @rdname mh_step
+#'
+#' @param l_target For `mh_sampling_step()`, a function that computes the log-density of the target,
+#'    possibly up to proportionality. It must accept `x_curr` as its first argument and its returned
+#'    value must be a valid corresponding `l_prop`.
+#' @param ... Arguments to be passed on to the `l_target` function.
+#' @param sampler For `mh_sampling_step()`, a sampling function whose first argument is compatible with
+#'    `x_curr` and returns appropriate `x_prop` states.
+#' @param sampler_args A list of further arguments to be passed on to the `sampler`
+#' @param lq_sampler (Optional) For `mh_sampling_step()`, a function that computes the transition log-densities
+#'    for the `sampler()`. It first two arguments must be conformable with `x_curr` and `x_prop` as
+#'    it will be used to compute the relevant `lq_c2p` and `lq_p2c` factors of the MH step.
+#'    If ommited, it is assumed that it is symmetric and, hence, it's not needed.
+#' @param lq_sampler_args A list of further arguments to be passed on to `lq_sampler`.
+#'
+#' @export
+#'
+mh_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args,
+                             lq_sampler = NULL, lq_sampler_args = NULL, do_checks = TRUE){
+
+  x_prop <- do.call(sampler, c(list(x_curr, sampler_args)))
+  l_prop <- l_target(x_prop, ...)
+
+  if(is.function(l_sampler)){
+    lq_c2p <- do.call(lq_sampler, c(list(x_curr, x_prop), lq_sampler_args))
+    lq_p2c <- do.call(lq_sampler, c(list(x_prop, x_curr), lq_sampler_args))
+  }else{
+    lq_c2p <- 0
+    lq_p2c <- 0
+  }
+
+  results <- mh_step(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, do_checks = do_checks)
+
+  return(results)
+
+}
+
+#' @rdname mh_step
+#'
+#' @export
+#'
+metropolis_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args,
+                                     do_checks = TRUE){
+
+  mh_sampling_step(x_curr, l_curr, l_target, ...,
+                   sampler = sampler, sampler_args = sampler_args,
+                   do_checks = do_checks)
 
 }
