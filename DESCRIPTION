@@ -19,6 +19,7 @@ LazyData: true
 URL: https://github.com/fazepher/tempeRing
 BugReports: https://github.com/fazepher/tempeRing/issues
 RoxygenNote: 7.1.2
+Roxygen: list(markdown = TRUE)
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
