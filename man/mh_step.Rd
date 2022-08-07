@@ -15,22 +15,27 @@ mh_step(
 )
 }
 \arguments{
-\item{x_curr}{A vector or matrix of current state(s)}
+\item{x_curr, x_prop}{Two vectors of current and proposed states, whose length determines the
+dimension of the state space. Alternatively, two matrices containing in its rows the states,
+and in this case the number of columns determines the dimension.}
 
-\item{x_prop}{A vector or matrix of proposed state(s)}
+\item{l_curr, l_prop}{Vectors of values of log-densities, possibly up to proportionality, of the
+current and proposed states.}
 
-\item{l_curr}{A vector of current log-densities, possibly up to proportionality}
+\item{lq_c2p, lq_p2c}{(Optional) Vectors of transition log-densities, possibly up to proportionality.
+The suffix \verb{_c2p} corresponds to transitions from the \strong{c}urrent towards the \strong{p}roposed state(s),
+while the suffix \verb{_p2c} contains the reversed transitions. If these values are ommited (the default),
+the Hastings ratio becomes standard Metropolis.}
 
-\item{l_prop}{A vector of proposed log-densities, possibly up to proportionality}
-
-\item{lq_c2p}{A vector of transition log-densities from the current state(s) to the proposal(s)}
-
-\item{lq_p2c}{A vector of transition log-densities from the porposal(s) to the currrent state(s)}
-
-\item{do_checks}{If TRUE (the default), run preliminary checks for validity of arguments}
+\item{do_checks}{If TRUE (the default), run preliminary checks for arguments validity.}
 }
 \value{
-A list containing the result of the Metropolis-Hastings step
+A list containing the results of the Metropolis-Hastings step:
+\itemize{
+\item accepted: Whether or not the proposal was accepted or rejected.
+\item x_next: The next value of the chain. If \code{accepted}, the proposed state, otherwise the current.
+\item l_next: The value of the log-density of \code{x_next}.
+}
 }
 \description{
 Metropolis-Hastings Step

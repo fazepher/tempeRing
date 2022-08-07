@@ -44,15 +44,22 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 
 #' Metropolis-Hastings Step
 #'
-#' @param x_curr A vector or matrix of current state(s)
-#' @param x_prop A vector or matrix of proposed state(s)
-#' @param l_curr A vector of current log-densities, possibly up to proportionality
-#' @param l_prop A vector of proposed log-densities, possibly up to proportionality
-#' @param lq_c2p A vector of transition log-densities from the current state(s) to the proposal(s)
-#' @param lq_p2c A vector of transition log-densities from the porposal(s) to the currrent state(s)
-#' @param do_checks If TRUE (the default), run preliminary checks for validity of arguments
+#' @param x_curr,x_prop Two vectors of current and proposed states, whose length determines the
+#'   dimension of the state space. Alternatively, two matrices containing in its rows the states,
+#'   and in this case the number of columns determines the dimension.
+#' @param l_curr,l_prop Vectors of values of log-densities, possibly up to proportionality, of the
+#'   current and proposed states.
+#' @param lq_c2p,lq_p2c (Optional) Vectors of transition log-densities, possibly up to proportionality.
+#'   The suffix `_c2p` corresponds to transitions from the **c**urrent towards the **p**roposed state(s),
+#'   while the suffix `_p2c` contains the reversed transitions. If these values are ommited (the default),
+#'   the Hastings ratio becomes standard Metropolis.
+#' @param do_checks If TRUE (the default), run preliminary checks for arguments validity.
 #'
-#' @return A list containing the result of the Metropolis-Hastings step
+#' @return A list containing the results of the Metropolis-Hastings step:
+#' * accepted: Whether or not the proposal was accepted or rejected.
+#' * x_next: The next value of the chain. If `accepted`, the proposed state, otherwise the current.
+#' * l_next: The value of the log-density of `x_next`.
+#'
 #' @export
 #'
 mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_checks = TRUE){
