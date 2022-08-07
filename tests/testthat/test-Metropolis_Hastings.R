@@ -73,6 +73,34 @@ test_that("Metropolis-Hastings step works", {
 
 })
 
+test_that("Sampling function works",{
+
+  # We should expect approximately 70.7% of acceptance from the mode of a std. normal
+  # The expected value of the mh ratio with a std. normal proposal from the mode
+  # when the target is the same std. normal is \int f(x)^2/f(0) dx = sqrt(2)/2 = 0.707
+  expect_true(
+    replicate(1000,
+              mh_sampling_step(x_curr = 0, l_curr = stats::dnorm(0, log = TRUE),
+                               l_target = stats::dnorm, log = TRUE,
+                               sampler = function(x) stats::rnorm(n = 1, mean = x))$accepted) |>
+      mean() |>
+      (\(x) abs(x - (sqrt(2)/2)) <= qnorm(0.995)*sqrt((sqrt(2)/2)*(1-sqrt(2)/2)/1000))())
+
+  expect_named(
+    mh_sampling_step(x_curr = 30, l_curr = stats::dnorm(30, mean =25, log = TRUE),
+                     l_target = stats::dnorm, mean = 25, log = TRUE,
+                     sampler = function(x, scale) stats::rnorm(n = 1, mean = x, sd = scale),
+                     sampler_args = list(scale = 3)) |>
+      (\(x)
+       mh_sampling_step(x_curr = x$x_next, l_curr = x$l_next,
+                        l_target = stats::dnorm, mean = 25, log = TRUE,
+                        sampler = function(x, scale) stats::rnorm(n = 1, mean = x, sd = scale),
+                        sampler_args = list(scale = 3))
+       )(),
+    c("x_next", "l_next", "accepted")
+  )
+
+})
 
 test_that("Metropolis is a good wrapper of MH", {
 
