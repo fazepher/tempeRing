@@ -70,3 +70,30 @@ test_that("Metropolis-Hastings step works", {
 
 
 })
+
+
+test_that("Metropolis is a good wrapper of MH", {
+
+  expect_identical(mh_step(x_curr = 0,
+                           x_prop = 0,
+                           l_curr = stats::dnorm(0, log = TRUE),
+                           l_prop = stats::dnorm(0, log = TRUE),
+                           lq_c2p = stats::dnorm(0, mean = 0, log = TRUE),
+                           lq_p2c = stats::dnorm(0, mean = 0, log = TRUE)),
+                   metropolis_step(x_curr = 0,
+                                   x_prop = 0,
+                                   l_curr = stats::dnorm(0, log = TRUE),
+                                   l_prop = stats::dnorm(0, log = TRUE)))
+
+  expect_identical(mh_step(x_curr = matrix(0, nrow = 5),
+                           x_prop = matrix(0, nrow = 5),
+                           l_curr = rep(stats::dnorm(0, log = TRUE), 5),
+                           l_prop = rep(stats::dnorm(0, log = TRUE), 5),
+                           lq_c2p = rep(stats::dnorm(0, mean = 0, log = TRUE), 5),
+                           lq_p2c = rep(stats::dnorm(0, mean = 0, log = TRUE), 5)),
+                   metropolis_step(x_curr = matrix(0, nrow = 5),
+                                   x_prop = matrix(0, nrow = 5),
+                                   l_curr = rep(stats::dnorm(0, log = TRUE), 5),
+                                   l_prop = rep(stats::dnorm(0, log = TRUE), 5)))
+
+})
