@@ -1,47 +1,4 @@
 
-checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is_matrix){
-
-  # All numeric
-  stopifnot(is.numeric(l_curr))
-  stopifnot(is.numeric(l_prop))
-  stopifnot(is.numeric(lq_c2p))
-  stopifnot(is.numeric(lq_p2c))
-
-  # Valid Lengths
-  if(C != length(l_prop)){
-    stop("Lengths of l_curr and l_prop must be equal")
-  }
-
-  check_l <- length(lq_c2p)
-  if(check_l != length(lq_p2c)){
-    stop("Lengths of lq_c2p and lq_p2c must be equal")
-  }
-  if(!check_l %in% c(1,C)){
-    stop("lengths of lq_c2p and lq_p2c must match that of l_curr or be 1")
-  }
-
-  # X agreements
-  if(x_is_matrix){
-
-    if(d != ncol(x_prop)){
-      stop("At x_prop, number of columns must match those of x_curr")
-    }
-    if(C != nrow(x_curr)){
-      stop("At x_curr, number of rows must match length of l_curr")
-    }
-    if(C != nrow(x_prop)){
-      stop("At x_prop, number of rows must match length of l_curr")
-    }
-
-  } else{
-    stopifnot(length(x_curr) == length(x_prop))
-  }
-
-
-  return(TRUE)
-
-}
-
 #' Metropolis-Hastings Step
 #'
 #' Perform a Metropolis-Hastings step on one or more states.
@@ -116,6 +73,8 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 #'
 mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_checks = TRUE){
 
+#--- Preparation and Checks -------------
+
   # Preparation
   ret_list <- c("x_next", "l_next", "accepted")
   C <- length(l_curr)
@@ -125,8 +84,46 @@ mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_c
 
   # Checks if requested
   if(do_checks){
-    checks_good <- checks_mh(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is_matrix)
+
+    # All numeric
+    stopifnot(is.numeric(l_curr))
+    stopifnot(is.numeric(l_prop))
+    stopifnot(is.numeric(lq_c2p))
+    stopifnot(is.numeric(lq_p2c))
+
+    # Valid Lengths
+    if(C != length(l_prop)){
+      stop("Lengths of l_curr and l_prop must be equal")
+    }
+
+    check_l <- length(lq_c2p)
+    if(check_l != length(lq_p2c)){
+      stop("Lengths of lq_c2p and lq_p2c must be equal")
+    }
+    if(!check_l %in% c(1,C)){
+      stop("lengths of lq_c2p and lq_p2c must match that of l_curr or be 1")
+    }
+
+    # X agreements
+    if(x_is_matrix){
+
+      if(d != ncol(x_prop)){
+        stop("At x_prop, number of columns must match those of x_curr")
+      }
+      if(C != nrow(x_curr)){
+        stop("At x_curr, number of rows must match length of l_curr")
+      }
+      if(C != nrow(x_prop)){
+        stop("At x_prop, number of rows must match length of l_curr")
+      }
+
+    } else{
+      stopifnot(length(x_curr) == length(x_prop))
+    }
+
   }
+
+#--- Algorithm, Post processing and results -------------
 
   # Acceptance
   delta_l <- (l_prop + lq_p2c) - (l_curr + lq_c2p)
@@ -137,6 +134,7 @@ mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_c
   l_next <- numeric(C)
   l_next[accepted] <- l_prop[accepted]
   l_next[!accepted] <- l_curr[!accepted]
+
 
   ## 3 possible return structures for x_next depending on that of x_curr ##
 
