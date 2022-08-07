@@ -1,0 +1,61 @@
+---
+title: "Basic Measure Theory Preliminaries"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Measure_Theory}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+To unify notation and concepts used throughout the project it is convenient to have a brief and compact refresher on some Measure Theoretic concepts. This is by no means an exhaustive treatment of the subject, and intends to be a quick fall-back-reference. 
+
+We start with a set $\Omega$, called the space, and $\mathcal{P}(\Omega)$ its power set, that is the collection of all the subsets of $\Omega$. 
+
+### $\sigma$-Algebra
+
+A class of subsets of $\Omega$, $\mathcal{F} \subseteq \mathcal{P}(\Omega)$ is called a **$\sigma$-algebra** if the following three conditions hold:
+
+1. It contains the space:$$\Omega\;\in\;\mathcal{F},$$
+2. It is closed under complements: $$A\;\in\;\mathcal{F} \quad\Longrightarrow\quad A^c\;\in\;\mathcal{F},$$
+3. It is closed under countable unions: 
+$$\lbrace A_i \rbrace_{i=1}^\infty\,\in\,\mathcal{F} \text{ such that } \forall\; j\neq k, A_j\bigcap A_k = \emptyset  \;\Longrightarrow\; \bigcup\limits_{i=1}^\infty A_i\,\in\,\mathcal{F}.$$
+
+### Measurable Space
+
+The pair $(\Omega,\mathcal{F})$ is called a **measurable space** and the elements of $\mathcal{F}$ are said to be $\mathcal{F}$-measurable sets, or simply measurable sets if the context is clear. 
+
+### Borel $\sigma$-algebra
+
+Let $\Omega = \mathbb{R}$ and consider all the open intervals $(a,b)$ where $-\infty< a < b<\infty$. The smallest $\sigma$-algebra containing them is called the **Borel $\sigma$-algebra** in $\mathbb{R}$ and is denoted by $\mathcal{B}(\mathbb{R})$. 
+
+Analogously, for any other $\Omega \subset \mathbb{R}$, $\mathcal{B}(\Omega)$ is its Borel $\sigma$-algebra; that is, the smallest $\sigma$-algebra containing all the open intervals in $\Omega$. For example, $\mathcal{B}([0,1])$ is the smallest $\sigma$-algebra containing all the open intervals $(a,b)$ with $0<a<b<1$. Whenever the context is clear, one can refer simply to the Borel $\sigma$-algebra and lighten the notation to $\mathcal{B}$. 
+
+### Measurable Functions 
+
+Let $(\Omega_X,\mathcal{F})$ and $(\Omega_Y, \mathcal{G})$ be two measurable spaces. A function
+$$f:\Omega_X\mapsto\Omega_Y$$
+is said to be **$\mathcal{F}$-measurable**, or more precisely $(\mathcal{F},\mathcal{G})$-measurable, if the pre-image under $f$ of any $\mathcal{G}$-measurable set is $\mathcal{F}$-measurable. That is,
+$$A\,\in\,\mathcal{G} \;\Longrightarrow\; f^{-1}(A) := \left\lbrace x \in \Omega_X \;:\; f(x) \in A \right\rbrace \,\in\, \mathcal{F}$$
+
+### Measure
+
+Let $(\Omega,\mathcal{F})$ be a measurable space. A function
+$$\mu:\mathcal{F}\mapsto [0,\infty]$$
+is called a **measure** if it satisfies the following two conditions:
+
+1. The empty set has measure zero: $\mu(\emptyset) = 0$, 
+2. It is *$\sigma$-additive*: $$\lbrace A_i \rbrace_{i=1}^\infty\,\in\,\mathcal{F},\, \forall\, j\neq k, A_j\bigcap A_i = \emptyset  \;\Longrightarrow\; \mu\left(\bigcup\limits_{i=1}^\infty A_i\right) = \sum\limits_{i=1}^\infty \mu(A_i).$$ 
+
+Note that the range of the measure implicitly sets the requirement to be non-negative, but it may be assigned a special "infinite" value, which is what the abuse of notation $[0,\infty]=\mathbb{R}_{\geq 0}\;\bigcup$ ``$+\infty$'' means.
+
+The triplet $(\Omega,\mathcal{F},\mu)$ is a **measure space**.
+
+### Probability and other types of Measures
+
+Whenever certain conditions are met, a measure can be qualified; notably, for example, whenever the space has "total measure 1", it may be called a probability measure: 
+
+1. **Probability measure**: $$\mu(\Omega) = 1$$
+2. **Finite measure**: $$\mu(\Omega)<\infty$$
+3. **$\sigma$-finite measure**: $$\exists \;\lbrace A_i\rbrace_{i=1}^{\infty}\;\in\;\mathcal{F} \text{ such that } \bigcup\limits_{i=1}^\infty A_i = \Omega,\text{ and } \mu(A_i) < \infty \;\forall\; i.$$
+4. **Complete measure**: $$N\;\in\;\mathcal{F} \text{ such that } \mu(N) = 0 \text{ and } B\subset N \quad\Longrightarrow\quad B\;\in\;\mathcal{F}$$
+
