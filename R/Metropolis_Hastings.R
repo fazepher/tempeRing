@@ -44,7 +44,8 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 
 #' Metropolis-Hastings Step
 #'
-#' These functions perform a Metropolis-Hastings step on one or more states.
+#' The `mh_step()` function performs a Metropolis-Hastings step on one or more states, while
+#' `metropolis_step()` is just a wrapper for symmetric transition kernels.
 #'
 #' # Dimension
 #'
@@ -98,8 +99,7 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 #' @return A list containing the results of the Metropolis-Hastings step:
 #' * accepted: A vector specifying whether or not each of the proposals was accepted or rejected.
 #' * x_next: The next values of the chain, has the same structure as the input `x_curr`
-#' * l_next: A vector of log-density values of `x_next` elements.
-#' See `Dimension` for specific structure and lengths of these.
+#' * l_next: A vector of log-density values for `x_next` elements.
 #'
 #' @export
 #'
@@ -151,8 +151,12 @@ mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_c
 
 }
 
-metropolis_step <- function(x_curr, x_prop, l_curr, l_prop, ...){
+#' @rdname mh_step
+#'
+#' @export
+#'
+metropolis_step <- function(x_curr, x_prop, l_curr, l_prop, do_checks = TRUE){
 
-  mh_step(x_curr,x_prop,l_curr,l_prop, ...)
+  mh_step(x_curr, x_prop, l_curr, l_prop, do_checks = do_checks)
 
 }

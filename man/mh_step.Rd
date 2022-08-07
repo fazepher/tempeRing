@@ -2,6 +2,7 @@
 % Please edit documentation in R/Metropolis_Hastings.R
 \name{mh_step}
 \alias{mh_step}
+\alias{metropolis_step}
 \title{Metropolis-Hastings Step}
 \usage{
 mh_step(
@@ -13,6 +14,8 @@ mh_step(
   lq_p2c = 0,
   do_checks = TRUE
 )
+
+metropolis_step(x_curr, x_prop, l_curr, l_prop, do_checks = TRUE)
 }
 \arguments{
 \item{x_curr, x_prop}{Two vectors or matrices of current and proposed states. See \code{Dimension} for
@@ -35,12 +38,12 @@ A list containing the results of the Metropolis-Hastings step:
 \itemize{
 \item accepted: A vector specifying whether or not each of the proposals was accepted or rejected.
 \item x_next: The next values of the chain, has the same structure as the input \code{x_curr}
-\item l_next: A vector of log-density values of \code{x_next} elements.
-See \code{Dimension} for specific structure and lengths of these.
+\item l_next: A vector of log-density values for \code{x_next} elements.
 }
 }
 \description{
-These functions perform a Metropolis-Hastings step on one or more states.
+The \code{mh_step()} function performs a Metropolis-Hastings step on one or more states, while
+\code{metropolis_step()} is just a wrapper for symmetric transition kernels.
 }
 \section{Dimension}{
 We want to perform MH steps on \code{C} states, so all log-density inputs are vectors of length \code{C}.
