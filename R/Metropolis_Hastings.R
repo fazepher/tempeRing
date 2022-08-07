@@ -100,9 +100,6 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 #'    slight overhead.
 #'
 #' @return A list containing the results of the Metropolis-Hastings step:
-#' * `accepted`:
-#'    A vector specifying whether or not each of the proposals was accepted or rejected.
-#'    May be useful for acceptance rate monitoring.
 #' * `x_next`:
 #'    The next values of the chain. This object has the same structure as the input `x_curr`.
 #'    For each proposal, it contains the corresponding `x_prop` or `x_curr` values depending on
@@ -111,6 +108,9 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 #'    A vector of log-density values corresponding to `x_next` elements.
 #'    These may be re-used in the next iteration of a chain to avoid wasting resources in what
 #'    usually is an expensive computation.
+#' * `accepted`:
+#'    A vector specifying whether or not each of the proposals was accepted or rejected.
+#'    May be useful for acceptance rate monitoring.
 #'
 #' @export
 #'
