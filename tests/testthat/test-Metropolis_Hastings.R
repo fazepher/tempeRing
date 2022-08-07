@@ -41,7 +41,9 @@ test_that("Metropolis-Hastings step works", {
                         l_next = rep(stats::dnorm(0, log = TRUE), 3),
                         accepted = rep(TRUE, 3)))
 
-  # We should reject with VERY HIGHT probability
+  skip_on_cran()
+
+  # We should reject with VERY HIGH probability
   expect_identical(mh_step(x_curr = 0,
                            x_prop = 1000,
                            l_curr = stats::dnorm(0, log = TRUE),
