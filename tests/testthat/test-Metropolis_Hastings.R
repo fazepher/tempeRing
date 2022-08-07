@@ -51,13 +51,22 @@ test_that("Metropolis-Hastings step works", {
                         accepted = FALSE))
 
   # We should expect an acceptance rate of 25%
-  expect_equal(
-    replicate(5000,
+  expect_true(
+    replicate(1000,
               mh_step(x_curr = 6, x_prop = 8,
                       l_curr = log(0.5), l_prop = log(0.25),
                       lq_c2p = log(0.7), lq_p2c = log(0.35))$accepted) |>
-      mean(),
-    0.25, tolerance = stats::qnorm(0.995)*sqrt(0.25*0.75/5000))
+      mean() |>
+      (\(x) abs(x - 0.25) <= qnorm(0.995)*sqrt(0.25*0.75/1000))())
+
+  # We should expect an acceptance rate of 60%
+  expect_true(
+    replicate(1000,
+              mh_step(x_curr = pi, x_prop = 47238,
+                      l_curr = log(4), l_prop = log(4),
+                      lq_c2p = log(1e-10), lq_p2c = log(6e-11), do_checks = FALSE)$accepted) |>
+      mean() |>
+      (\(x) abs(x - 0.60) <= qnorm(0.995)*sqrt(0.60*0.40/1000))())
 
 
 })
