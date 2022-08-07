@@ -25,7 +25,7 @@ mh_sampling_step(
   l_target,
   ...,
   sampler,
-  sampler_args,
+  sampler_args = NULL,
   lq_sampler = NULL,
   lq_sampler_args = NULL,
   do_checks = TRUE
@@ -78,9 +78,6 @@ If ommited, it is assumed that it is symmetric and, hence, it's not needed.}
 \value{
 A list containing the results of the Metropolis-Hastings step:
 \itemize{
-\item \code{accepted}:
-A vector specifying whether or not each of the proposals was accepted or rejected.
-May be useful for acceptance rate monitoring.
 \item \code{x_next}:
 The next values of the chain. This object has the same structure as the input \code{x_curr}.
 For each proposal, it contains the corresponding \code{x_prop} or \code{x_curr} values depending on
@@ -89,6 +86,9 @@ their acceptance or rejection.
 A vector of log-density values corresponding to \code{x_next} elements.
 These may be re-used in the next iteration of a chain to avoid wasting resources in what
 usually is an expensive computation.
+\item \code{accepted}:
+A vector specifying whether or not each of the proposals was accepted or rejected.
+May be useful for acceptance rate monitoring.
 }
 }
 \description{
