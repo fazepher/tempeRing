@@ -30,7 +30,7 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
   # If the user didn't we define proposal sampler(s) as indep. normals
   if(is.null(custom_rw_sampler)){
     sampler <- ifelse(d == 1,
-                      function(x, scale){ rnorm(n = 1, mean = x, sd = scale) },
+                      function(x, scale){ stats::rnorm(n = 1, mean = x, sd = scale) },
                       function(x, scale){ mvtnorm::rmvnorm(n = 1, mean = x, sigma = scale) })
     sampler_list <- rep(list(sampler), K)
   }else{
@@ -46,7 +46,7 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
   if(is.null(x_0)){
     x_0_u <- x_0_u %||% 2
     stopifnot(is.numeric(x_0_u) && x_0_u > 0)
-    x_0 <- runif(d, min = -x_0_u, max = x_0_u)
+    x_0 <- stats::runif(d, min = -x_0_u, max = x_0_u)
   }else{
     stopifnot(is.numeric(x_0) && length(x_0) == d)
   }

@@ -5,7 +5,7 @@ st_temp_step <- function(k_curr, x_curr, l_curr, l_target, ...,
   K <- K %||% length(beta_schedule)
   g_schedule <- g_schedule %||% rep(0, K)
 
-  move_right <- runif(1) <= 0.5
+  move_right <- stats::runif(1) <= 0.5
   if(k_curr == K && move_right){
     return(list("k_next" = k_curr, "acc" = FALSE, "l_next" = l_curr))
   }
@@ -17,7 +17,7 @@ st_temp_step <- function(k_curr, x_curr, l_curr, l_target, ...,
   delta_g <- g_schedule[k_prop] - g_schedule[k_curr]
   l_prop <- l_target(x_curr, beta_schedule[k_prop], ...)
   delta_H <- l_prop - l_curr + delta_g
-  if(delta_H > 0 || log(runif(1)) <= delta_H){
+  if(delta_H > 0 || log(stats::runif(1)) <= delta_H){
     return(list("k_next" = k_prop, "acc" = TRUE, "l_next" = l_prop))
   }
   return(list("k_next" = k_curr, "acc" = FALSE, "l_next" = l_curr))
@@ -30,7 +30,7 @@ attempt_swap <- function(x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
                 l_target(x_2, beta = beta_1, ...))
   delta_l <- sum(swaped_l) - (l_1 + l_2)
 
-  if(delta_l > 0 || log(runif(1)) <= delta_l){
+  if(delta_l > 0 || log(stats::runif(1)) <= delta_l){
     return(list("acc" = TRUE, "beta_next" = c(beta_2, beta_1), "l_next" = swaped_l))
   }
   return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2), "l_next" = c(l_1, l_2)))
@@ -99,7 +99,7 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
   l_next <- l_curr
 
   # Choose whether to swap odd or even indices with equal probability
-  if(runif(1) <= 0.5){
+  if(stats::runif(1) <= 0.5){
     b_1 <- odd_indices
   } else{
     b_1 <- even_indices
