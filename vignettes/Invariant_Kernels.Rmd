@@ -1,0 +1,47 @@
+---
+title: "Invariant Kernels"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Invariant_Kernels}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## General setting 
+
+Our general setting is a random vector $(X,Y)$ of interest with joint target measure $\mu$. So, we have two marginal probability spaces
+$$(\Omega_X,\mathcal{F}_X,\mu_{\scriptsize{X}})\quad\text{and}\quad (\Omega_Y,\mathcal{G}_Y,\mu_{\scriptsize{Y}}),$$ 
+and a joint probability space 
+$$(\Omega_X\times\Omega_Y,\;\mathcal{F}_X\otimes\mathcal{G}_Y,\;\mu).$$
+
+We have corresponding conditional measures $\mu_{X|Y}(\cdot | \cdot)$ and $\mu_{Y|X}(\cdot | \cdot)$.
+
+Let $A$ be an joint event. We can define the following $Y$-slice event:
+$$A_Y := \left\lbrace \tilde{y} \;\in\; \Omega_Y \;:\; \exists\; \tilde{x} \;\in\; \Omega_X, \text{ such that } (\tilde{x},\tilde{y}) \;\in\; A\right\rbrace$$
+And a correspoding $X$-slice function
+$$A_X := \Omega_Y \mapsto \mathcal{F}_X \text{ such that } A_X(y) = \left\lbrace \tilde{x} \in \Omega_X \;:\; (\tilde{x}, y) \;\in\; A\right\rbrace$$
+
+### Basic identity
+
+$$\mu(A) = \int\limits_{A_Y} \mu_{X|Y}(A_X(y)|Y=y) d\mu_Y$$
+
+### Invariance property
+
+A Markov kernel $P$ is $\mu$-invariant if and only if $\mu(A) = \int P(z,A)d\mu$
+
+### Single component invariance
+
+Let $P_{X|Y}[x,A_X(y)]$ be a Markov kernel and define the corresponding single component update kernel as $P[(x,y),A] = \delta_y(A_Y) P_{X|Y}[x,A_X(y)]$. 
+Then,
+$$P_{X|Y}[x,A_X(y)] \text{ is } \mu_{X|Y}\text{-invariant} \;\Longrightarrow\; P[(x,y),A] \text{ is } \mu_\text{-invariant}$$
+
+**Proof**
+$$\begin{split}
+\int P[(x,y),A]d\mu &= \int\limits_{\Omega_Y}\int\limits_{\Omega_X}P[(x,y),A]d\mu_{\scriptsize{X|Y=y}}d\mu_{\scriptsize{Y}} \\
+&= \int\limits_{\Omega_Y}\delta_y(A_Y)\int\limits_{\Omega_X} P_{X|Y}[x,A_X(y)]d\mu_{\scriptsize{X|Y=y}}\;d\mu_{\scriptsize{Y}}\\
+&= \int\limits_{A_Y}\;\int\limits_{\Omega_X} P_{X|Y}[x,A_X(y)]d\mu_{\scriptsize{X|Y=y}}\; d\mu_{\scriptsize{Y}}\\
+&=\int\limits_{A_Y}\mu_{\scriptsize{X|Y}}(A_X(y)|Y=y)d\mu_{\scriptsize{Y}} = \mu(A)
+\end{split}$$
+
+## Composition invariance
+
