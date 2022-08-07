@@ -44,7 +44,47 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 
 #' Metropolis-Hastings Step
 #'
-#' @param x_curr,x_prop Two vectors of current and proposed states, whose length determines the
+#' These functions perform a Metropolis-Hastings step on one or more states.
+#'
+#' # Dimension
+#'
+#' We want to perform MH steps on `C` states, so all log-density inputs are vectors of length `C`.
+#' The only exception is for the transition log-densities that by default are set both to `0`
+#' to signal that we are dealing with symmetrical Metropolis steps.
+#' Similarly, the `accepted` and `l_next` elements of the output list are always vectors of length `C`.
+#'
+#' States, on the other hand, live in a space of dimension `d`. There are thus 3 big combinations:
+#'
+#' * `C`=1: We want to perform a step on a single d-dimensional state. Without loss of generality,
+#' `x_curr` and `x_prop` are two vectors of length `d`.
+#' * `C`>1, `d`>1: We want to perform a step on each of several multidimensional states.
+#' Here, `x_curr` and `x_prop` are two `C` by `d` matrices, so that each state is a row vector.
+#' * `C`>1, `d`=1: We want to perform a step on each of several 1-dimensional states.
+#' Here, all inputs can be vectors of length `C` or, alternatively,
+#' `x_curr` and `x_prop` may be two `C` by `1` matrices.
+#'
+#' The output element `x_next` is always of the same structure as the input `x_curr`.
+#'
+#' # The Metropolis-Hastings Ratio
+#' The usual form of the MH acceptance probability \eqn{\alpha = min{1, MH ratio}},
+#' relies on the ratio
+#' \deqn{ MH ratio = \pi(x_1) q(x_0|x_1) / \pi(x_0) q(x_1|x_0) }
+#' to satisfy detail balance.
+#' For numerical reasons, we wish to work on the log scale and the ratio becomes
+#' \deqn{ MH log-ratio =  l(x_1) + lq(x_0|x_1) - l(x_0) - lq(x_1|x_0) }
+#' Whenever the transition kernel is symmetrical (i.e. \eqn{q(x_0|x_1)=q(x_1|x_0)})
+#' we can omit those terms from the calculation and recover the original Metropolis et. al ratio.
+#' This is the default assumption of the `mh_step()` function.
+#' ## Note on proportionality
+#' We want to also take advantage of the cancellation of normalizing constants so that we only need
+#' the log-densities *up to a constant of proportionality*. Note however that this refers
+#' to the **same** constant. While there are usually no problems when it comes to the target density,
+#' care must be taken with general transition kernels as they may have different
+#' underlying densities whose normalizing constants don't cancel.
+#'
+#'
+#' @param x_curr,x_prop Two vectors or matrices of current and proposed states. See `Dimension` for
+#'   how to specify these to correctly identify the dimension of the state space. length determines the
 #'   dimension of the state space. Alternatively, two matrices containing in its rows the states,
 #'   and in this case the number of columns determines the dimension.
 #' @param l_curr,l_prop Vectors of values of log-densities, possibly up to proportionality, of the
@@ -56,9 +96,10 @@ checks_mh <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, C, d, x_is
 #' @param do_checks If TRUE (the default), run preliminary checks for arguments validity.
 #'
 #' @return A list containing the results of the Metropolis-Hastings step:
-#' * accepted: Whether or not the proposal was accepted or rejected.
-#' * x_next: The next value of the chain. If `accepted`, the proposed state, otherwise the current.
-#' * l_next: The value of the log-density of `x_next`.
+#' * accepted: A vector specifying whether or not each of the proposals was accepted or rejected.
+#' * x_next: The next values of the chain, has the same structure as the input `x_curr`
+#' * l_next: A vector of log-density values of `x_next` elements.
+#' See `Dimension` for specific structure and lengths of these.
 #'
 #' @export
 #'

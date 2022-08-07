@@ -15,7 +15,8 @@ mh_step(
 )
 }
 \arguments{
-\item{x_curr, x_prop}{Two vectors of current and proposed states, whose length determines the
+\item{x_curr, x_prop}{Two vectors or matrices of current and proposed states. See \code{Dimension} for
+how to specify these to correctly identify the dimension of the state space. length determines the
 dimension of the state space. Alternatively, two matrices containing in its rows the states,
 and in this case the number of columns determines the dimension.}
 
@@ -32,11 +33,52 @@ the Hastings ratio becomes standard Metropolis.}
 \value{
 A list containing the results of the Metropolis-Hastings step:
 \itemize{
-\item accepted: Whether or not the proposal was accepted or rejected.
-\item x_next: The next value of the chain. If \code{accepted}, the proposed state, otherwise the current.
-\item l_next: The value of the log-density of \code{x_next}.
+\item accepted: A vector specifying whether or not each of the proposals was accepted or rejected.
+\item x_next: The next values of the chain, has the same structure as the input \code{x_curr}
+\item l_next: A vector of log-density values of \code{x_next} elements.
+See \code{Dimension} for specific structure and lengths of these.
 }
 }
 \description{
-Metropolis-Hastings Step
+These functions perform a Metropolis-Hastings step on one or more states.
 }
+\section{Dimension}{
+We want to perform MH steps on \code{C} states, so all log-density inputs are vectors of length \code{C}.
+The only exception is for the transition log-densities that by default are set both to \code{0}
+to signal that we are dealing with symmetrical Metropolis steps.
+Similarly, the \code{accepted} and \code{l_next} elements of the output list are always vectors of length \code{C}.
+
+States, on the other hand, live in a space of dimension \code{d}. There are thus 3 big combinations:
+\itemize{
+\item \code{C}=1: We want to perform a step on a single d-dimensional state. Without loss of generality,
+\code{x_curr} and \code{x_prop} are two vectors of length \code{d}.
+\item \code{C}>1, \code{d}>1: We want to perform a step on each of several multidimensional states.
+Here, \code{x_curr} and \code{x_prop} are two \code{C} by \code{d} matrices, so that each state is a row vector.
+\item \code{C}>1, \code{d}=1: We want to perform a step on each of several 1-dimensional states.
+Here, all inputs can be vectors of length \code{C} or, alternatively,
+\code{x_curr} and \code{x_prop} may be two \code{C} by \code{1} matrices.
+}
+
+The output element \code{x_next} is always of the same structure as the input \code{x_curr}.
+}
+
+\section{The Metropolis-Hastings Ratio}{
+The usual form of the MH acceptance probability \eqn{\alpha = min{1, MH ratio}},
+relies on the ratio
+\deqn{ MH ratio = \pi(x_1) q(x_0|x_1) / \pi(x_0) q(x_1|x_0) }
+to satisfy detail balance.
+For numerical reasons, we wish to work on the log scale and the ratio becomes
+\deqn{ MH log-ratio =  l(x_1) + lq(x_0|x_1) - l(x_0) - lq(x_1|x_0) }
+Whenever the transition kernel is symmetrical (i.e. \eqn{q(x_0|x_1)=q(x_1|x_0)})
+we can omit those terms from the calculation and recover the original Metropolis et. al ratio.
+This is the default assumption of the \code{mh_step()} function.
+\subsection{Note on proportionality}{
+
+We want to also take advantage of the cancellation of normalizing constants so that we only need
+the log-densities \emph{up to a constant of proportionality}. Note however that this refers
+to the \strong{same} constant. While there are usually no problems when it comes to the target density,
+care must be taken with general transition kernels as they may have different
+underlying densities whose normalizing constants don't cancel.
+}
+}
+
