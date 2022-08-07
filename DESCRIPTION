@@ -3,7 +3,7 @@ Type: Package
 Title: Tempering MCMC Methods
 Version: 0.1.0
 Authors@R:
-    person(given = "Fernando Antonio",
+    person(given = c("Fernando","A."),
            family = "Zepeda Herrera",
            role = c("aut", "cre"),
            email = "Fernando.Zepeda@warwick.ac.uk",
