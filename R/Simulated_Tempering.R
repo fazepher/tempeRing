@@ -1,30 +1,4 @@
 
-st_temp_step <- function(k_curr, x_curr, l_curr, l_target, ...,
-                         beta_schedule, g_schedule = NULL, K = NULL){
-
-  K <- K %||% length(beta_schedule)
-  g_schedule <- g_schedule %||% rep(0, K)
-
-  move_right <- runif(1) <= 0.5
-  if(k_curr == K && move_right){
-    return(list("k_next" = k_curr, "acc" = FALSE, "l_next" = l_curr))
-  }
-  if(k_curr == 1 && !move_right){
-    return(list("k_next" = k_curr, "acc" = FALSE, "l_next" = l_curr))
-  }
-  k_prop <- ifelse(move_right, k_curr + 1, k_curr - 1)
-
-  delta_g <- g_schedule[k_prop] - g_schedule[k_curr]
-  l_prop <- l_target(x_curr, beta_schedule[k_prop], ...)
-  delta_H <- l_prop - l_curr + delta_g
-  if(delta_H > 0 || log(runif(1)) <= delta_H){
-    return(list("k_next" = k_prop, "acc" = TRUE, "l_next" = l_prop))
-  }
-  return(list("k_next" = k_curr, "acc" = FALSE, "l_next" = l_curr))
-
-}
-
-
 ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
                          scale = 1, Temp_Moves = 1000, Within_Moves = 10,
                          x_0 = NULL, x_0_u = NULL, k_0 = NULL, seed = NULL,
