@@ -29,5 +29,6 @@ Imports:
     matrixStats,
     mvtnorm,
     pracma,
-    purrr
+    purrr,
+    rlang
 VignetteBuilder: knitr
