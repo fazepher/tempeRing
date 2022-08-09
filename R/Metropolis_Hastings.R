@@ -56,7 +56,7 @@
 #'    It may be set to FALSE if one is sure that the arguments are correct and doesn't want to incurr in
 #'    slight overhead.
 #'
-#' @return A list containing the results of the Metropolis-Hastings step:
+#' @returns A list containing the results of the Metropolis-Hastings step:
 #' * `x_next`:
 #'    The next values of the chain. This object has the same structure as the input `x_curr`.
 #'    For each proposal, it contains the corresponding `x_prop` or `x_curr` values depending on
