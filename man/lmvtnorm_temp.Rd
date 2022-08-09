@@ -5,8 +5,9 @@
 \alias{dmvtnorm_temp}
 \alias{rmvtnorm_temp}
 \alias{lmvtnorm}
+\alias{dmvtnorm}
 \alias{rmvtnorm}
-\title{Multivariate Tempered Normal log densities and samplers}
+\title{Multivariate Tempered Normal log densities and sampler}
 \usage{
 lmvtnorm_temp(
   x,
@@ -28,12 +29,99 @@ dmvtnorm_temp(
   d = NULL
 )
 
-rmvtnorm_temp(n, beta = 1, mu, sigma = NULL, LChol_sigma = NULL, d = NULL)
+rmvtnorm_temp(
+  n,
+  beta = 1,
+  mu = rep(0, 2),
+  sigma = NULL,
+  LChol_sigma = NULL,
+  d = NULL
+)
 
 lmvtnorm(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL)
 
+dmvtnorm(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL)
+
 rmvtnorm(n, mu = 0, sigma = NULL, LChol_sigma = NULL)
 }
+\arguments{
+\item{x}{A quantile vector or a matrix of quantile vectors (by rows).}
+
+\item{beta}{Inverse temperature parameter \eqn{\beta > 0}.}
+
+\item{mu}{Mean vector. If a single value is provided, it is expanded via \code{rep(mu,d)}.}
+
+\item{sigma}{Covariance matrix, by default it is taken to be the identity.}
+
+\item{sigma_inv}{(Optional) Inverse of the covariance matrix, see Details.}
+
+\item{logdet_sigma}{(Optional) Logarithm of the determinant of the covariance matrix, see Details.}
+
+\item{d}{Dimension of \code{x}, if NULL (the default) it is taken to be \code{ncol(x)} or \code{length(x)}
+as appropriate;  for random generation, it would be taken as \code{length(mu)}.}
+
+\item{LChol_sigma}{(Optional) Lower triangular component of the Cholesky decomposition of \code{sigma},
+see Details.}
+}
+\value{
+The preffix \code{l} stands for log-density, \code{d} for density, and \code{r} for sampling.
+\code{lnorm} gives the log-density of a regular normal without tempering (i.e. \eqn{\beta = 1}).
+See \code{\link[stats:Normal]{stats::dnorm()}} for more information. When sampling \code{n}> 1 realizations,
+the resulting matrix has \code{n} rows and \code{d} columns.
+}
 \description{
-Multivariate Tempered Normal log densities and samplers
+Log-density, density and random generation of a multivariate tempered normal
+with inverse temperature equal to \code{beta}, mean equal to \code{mu} and \strong{covariance} matrix
+equal to \code{sigma}.
+
+\code{lmvtnorm}, \code{dmvtnorm} and \code{rmvtnorm} are equivalent to the tempered versions with \code{beta}=1.
+}
+\details{
+Tempering a distribution means raising its density to a power \eqn{\beta>0},
+known as inverse temperature. Equivalently, we multiply the log-density by \eqn{\beta}:
+\deqn{f_\beta(x) = f(x)^\beta}
+\deqn{l_\beta(x) = \beta l(x)}
+Consider a \eqn{d}-dimensional multivariate normal random variable centered at \eqn{\mu} with
+covariance matrix \eqn{\Sigma}, where \eqn{cte} represents the the normalizing constant
+\deqn{X ~ MVN(\mu, \Sigma)}
+\deqn{l(x) = -0.5(x-\mu)^T\Sigma^-1(x-\mu) + cte}
+Its tempered version is equivalent to rescaling with new covariance matrix \eqn{\Sigma/\beta}
+and keeping the same mean parameter:
+\deqn{l_\beta(x) = -\beta 0.5 (x-\mu)^T \Sigma^-1 (x-\mu)  + cte' }
+\deqn{l_\beta(x) = -0.5 (x-\mu)^T (\Sigma/\beta)^-1 (x-\mu) + cte'}
+\deqn{X|\beta ~ MVN(\mu, \Sigma/\beta)}
+
+Now, the multivariate normal density only depends on \eqn{\Sigma} through its inverse
+\eqn{\Sigma^-1} in the kernel term and determinant in the normalizing constant
+\deqn{cte = -0.5(d log(2\pi) + log( det(\Sigma) )}
+For this reason, instead of providing the covariance matrix \code{sigma}, the user can provide both via
+\code{sigma_inv} and \code{logdet_sigma}, saving the functions the need to compute them under the hood.
+
+Another way of thinking of a Multivariate Normal random variable is to consider a Cholesky
+decomposition of \eqn{\Sigma = LL^T}, whose lower triangular component \eqn{L} acts as
+a linear transformation of \eqn{d} independent univariate standard normal variables in a vector
+\deqn{X = \mu + L [z_1, ..., z_d]^T}
+This is the way \code{rmvtnorm_temp} and \code{rmvtnorm} generate samples, via \code{stats::rnorm}.
+Thus, if known, the user may provide \code{LChol_sigma} instead of \code{sigma}.
+}
+\examples{
+
+Sigma <- matrix(c(1,0.5,0.5,1),2)
+Sigma_inv <- solve(Sigma)
+LogDet_Sigma <- log(det(Sigma))
+
+lmvtnorm_temp(x = c(0,0), beta = 0.5, sigma = Sigma)
+lmvtnorm_temp(x = c(0,0), beta = 0.5,
+              sigma_inv = Sigma_inv, logdet_sigma = LogDet_Sigma)
+lmvtnorm(x = c(0,0), sigma = Sigma/0.5)
+dmvtnorm(x = c(0,0), sigma = Sigma/0.5) |> log()
+
+L <- t(chol(Sigma))
+rmvtnorm_temp(n = 1000, sigma = Sigma) |> plot()
+rmvtnorm_temp(n = 1000, LChol_sigma = L) |> plot()
+
+rmvtnorm_temp(n = 1, mu = rep(5,3))
+rmvtnorm_temp(n = 2, mu = rep(5,3))
+rmvtnorm_temp(n = 2, mu = 5, d = 3)
+
 }

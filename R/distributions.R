@@ -1,18 +1,28 @@
 
-
 ##### Basic Normal log densities and samplers #####
 
 #' Tempered Normal log densities and sampler
 #'
+#' @description
 #' These are basic wrappers around `stats::dnorm()` and `stats::rnorm()` to provide shortcut evaluation
-#' of the log-density of a univariate tempered normal as well as samples from it.
+#' of the log-density, density and random generation of a univariate tempered normal
+#' with inverse temperature equal to `beta`, mean equal to `mean` and **standard deviation** equal to `sd`.
 #'
+#' When `beta` = 1, we recover a regular normal density.
+#'
+#' @details
 #' Tempering a distribution means raising its density to a power \eqn{\beta>0},
-#' known as inverse temperature. A tempered normal centered at \eqn{\mu} with inverse temperature
-#' parameter \eqn{\beta} and standard deviation \eqn{\sigma} is equivalent to a normal
-#' with standard deviation \eqn{\sigma/\sqrt{\beta}} and the same mean parameter.
-#' This rescaling property can be seen by noticing that raising to a power means multiplying within
-#' the exponential term of the normal density and then renormalizing to integrate to 1.
+#' known as inverse temperature. Equivalently, we multiply the log-density by \eqn{\beta}:
+#' \deqn{f_\beta(x) = f(x)^\beta}
+#' \deqn{l_\beta(x) = \beta l(x)}
+#' Consider a univariate normal random variable centered at \eqn{\mu} with
+#' standard deviation \eqn{\sigma}, where \eqn{cte} represents the normalizing constant
+#' \deqn{X ~ N(\mu, \sigma)}
+#' \deqn{l(x) = -(x-\mu)^2 / 2\sigma^2 + cte}
+#' Its tempered version is equivalent to rescaling with new standard deviation \eqn{\sigma/\sqrt\beta}
+#' and keeping the same mean parameter:
+#' \deqn{l_\beta(x) = \beta l(x) = -\beta(x-\mu)^2 / 2\sigma^2 + cte'}
+#' \deqn{X|\beta ~ N(\mu, \sigma/\sqrt\beta)}
 #'
 #'
 #' @param x vector of quantiles.
@@ -21,14 +31,19 @@
 #' @param beta inverse temperature parameter \eqn{\beta > 0}.
 #' @param n number of observations.
 #'
-#' @return
-#' `lnorm` gives the log-density of a normal without tempering (i.e. \eqn{\beta = 1}).
-#' On the other hand, the functions with suffix `_temp` do include the inverse temperature parameter,
-#' `beta`. The preffix `l` stands for log-density, `d` for density, and `r` for sampling.
+#' @returns
+#' The preffix `l` stands for log-density, `d` for density, and `r` for sampling.
+#' `lnorm` gives the log-density of a regular normal without tempering (i.e. \eqn{\beta = 1}).
+#' See [stats::dnorm()] for more information.
+#'
+#' @seealso [lmvtnorm_temp()], [stats::dnorm()]
 #'
 #' @export
 #'
 #' @examples
+#'
+#' lnorm_temp(x = 0, beta = 0.5, sd = 1)
+#' lnorm(0, sd = 1/sqrt(0.5))
 #'
 #' lnorm(x = 0)
 #' dnorm(x = 0, log = TRUE)
@@ -36,50 +51,133 @@
 #' dnorm_temp(x = 5, beta = 1)
 #' dnorm(x = 5)
 #'
-#' lnorm_temp(x = 0, beta = 0.5, sd = 1)
-#' lnorm(0, sd = 1/sqrt(0.5))
-#'
 #' rnorm_temp(n = 1000, mean = 100, sd = 1) |> hist()
 #' rnorm_temp(n = 1000, beta = 0.1, mean = 100, sd = 1) |> hist()
 #'
 #' # The functions inherit vectorization,
-#' # so can be used for example with ggplot2::stat_function()
+#' # so can be used for example with ggplot2::geom_function()
 #' # to show the flattening effect of tempering
 #'
 #' ggplot() +
-#'   stat_function(fun = dnorm, color = "gray65") +
-#'   stat_function(fun = dnorm_temp, args = list(beta = 0.75), color = "steelblue4") +
-#'   stat_function(fun = dnorm_temp, args = list(beta = 0.5), color = "darkcyan") +
-#'   stat_function(fun = dnorm_temp, args = list(beta = 0.25), color = "blueviolet") +
-#'   stat_function(fun = dnorm_temp, args = list(beta = 0.25^2), color = "maroon4") +
+#'   geom_function(fun = dnorm,
+#'                 color = "gray65") +
+#'   geom_function(fun = dnorm_temp, args = list(beta = 0.75),
+#'                 color = "steelblue4") +
+#'   geom_function(fun = dnorm_temp, args = list(beta = 0.5),
+#'                 color = "darkcyan") +
+#'   geom_function(fun = dnorm_temp, args = list(beta = 0.25),
+#'                 color = "blueviolet") +
+#'   geom_function(fun = dnorm_temp, args = list(beta = 0.25^2),
+#'                 color = "maroon4") +
 #'   xlim(-6,6) +
 #'   theme_classic()
 #'
 #'
 #'
-lnorm <- function(x, mean = 0, sd = 1){dnorm(x, mean, sd, log = TRUE)}
+lnorm_temp <- function(x, beta = 1, mean = 0, sd = 1){
+  dnorm(x, mean, sd/sqrt(beta), log = TRUE)
+}
 
-#' @rdname lnorm
+#' @rdname lnorm_temp
 #'
 #' @export
 #'
-dnorm_temp <- function(x, beta = 1, mean = 0, sd = 1) dnorm(x, mean, sd/sqrt(beta))
+dnorm_temp <- function(x, beta = 1, mean = 0, sd = 1){
+  dnorm(x, mean, sd/sqrt(beta))
+}
 
-#' @rdname lnorm
+#' @rdname lnorm_temp
 #'
 #' @export
 #'
-lnorm_temp <- function(x, beta = 1, mean = 0, sd = 1) dnorm(x, mean, sd/sqrt(beta), log = TRUE)
+rnorm_temp <- function(n, beta = 1, mean = 0, sd = 1){
+  rnorm(n, mean, sd/sqrt(beta))
+}
 
-#' @rdname lnorm
+#' @rdname lnorm_temp
 #'
 #' @export
 #'
-rnorm_temp <- function(n, beta = 1, mean = 0, sd = 1) rnorm(n, mean, sd/sqrt(beta))
+lnorm <- function(x, mean = 0, sd = 1){
+  dnorm(x, mean, sd, log = TRUE)
+}
+
 
 ##### Basic Multivariate normal log densities and samplers ####
 
-#' Multivariate Tempered Normal log densities and samplers
+#' Multivariate Tempered Normal log densities and sampler
+#'
+#' @description
+#'
+#' Log-density, density and random generation of a multivariate tempered normal
+#' with inverse temperature equal to `beta`, mean equal to `mu` and **covariance** matrix
+#' equal to `sigma`.
+#'
+#' `lmvtnorm`, `dmvtnorm` and `rmvtnorm` are equivalent to the tempered versions with `beta`=1.
+#'
+#' @details
+#' Tempering a distribution means raising its density to a power \eqn{\beta>0},
+#' known as inverse temperature. Equivalently, we multiply the log-density by \eqn{\beta}:
+#' \deqn{f_\beta(x) = f(x)^\beta}
+#' \deqn{l_\beta(x) = \beta l(x)}
+#' Consider a \eqn{d}-dimensional multivariate normal random variable centered at \eqn{\mu} with
+#' covariance matrix \eqn{\Sigma}, where \eqn{cte} represents the the normalizing constant
+#' \deqn{X ~ MVN(\mu, \Sigma)}
+#' \deqn{l(x) = -0.5(x-\mu)^T\Sigma^-1(x-\mu) + cte}
+#' Its tempered version is equivalent to rescaling with new covariance matrix \eqn{\Sigma/\beta}
+#' and keeping the same mean parameter:
+#' \deqn{l_\beta(x) = -\beta 0.5 (x-\mu)^T \Sigma^-1 (x-\mu)  + cte' }
+#' \deqn{l_\beta(x) = -0.5 (x-\mu)^T (\Sigma/\beta)^-1 (x-\mu) + cte'}
+#' \deqn{X|\beta ~ MVN(\mu, \Sigma/\beta)}
+#'
+#' Now, the multivariate normal density only depends on \eqn{\Sigma} through its inverse
+#' \eqn{\Sigma^-1} in the kernel term and determinant in the normalizing constant
+#' \deqn{cte = -0.5(d log(2\pi) + log( det(\Sigma) )}
+#' For this reason, instead of providing the covariance matrix `sigma`, the user can provide both via
+#' `sigma_inv` and `logdet_sigma`, saving the functions the need to compute them under the hood.
+#'
+#' Another way of thinking of a Multivariate Normal random variable is to consider a Cholesky
+#' decomposition of \eqn{\Sigma = LL^T}, whose lower triangular component \eqn{L} acts as
+#' a linear transformation of \eqn{d} independent univariate standard normal variables in a vector
+#' \deqn{X = \mu + L [z_1, ..., z_d]^T}
+#' This is the way `rmvtnorm_temp` and `rmvtnorm` generate samples, via `stats::rnorm`.
+#' Thus, if known, the user may provide `LChol_sigma` instead of `sigma`.
+#'
+#'
+#' @param x A quantile vector or a matrix of quantile vectors (by rows).
+#' @param beta Inverse temperature parameter \eqn{\beta > 0}.
+#' @param mu Mean vector. If a single value is provided, it is expanded via `rep(mu,d)`.
+#' @param sigma Covariance matrix, by default it is taken to be the identity.
+#' @param sigma_inv (Optional) Inverse of the covariance matrix, see Details.
+#' @param logdet_sigma (Optional) Logarithm of the determinant of the covariance matrix, see Details.
+#' @param d Dimension of `x`, if NULL (the default) it is taken to be `ncol(x)` or `length(x)`
+#' as appropriate;  for random generation, it would be taken as `length(mu)`.
+#'
+#' @returns
+#' The preffix `l` stands for log-density, `d` for density, and `r` for sampling.
+#' `lnorm` gives the log-density of a regular normal without tempering (i.e. \eqn{\beta = 1}).
+#' See [stats::dnorm()] for more information. When sampling `n`> 1 realizations,
+#' the resulting matrix has `n` rows and `d` columns.
+#'
+#' @examples
+#'
+#' Sigma <- matrix(c(1,0.5,0.5,1),2)
+#' Sigma_inv <- solve(Sigma)
+#' LogDet_Sigma <- log(det(Sigma))
+#'
+#' lmvtnorm_temp(x = c(0,0), beta = 0.5, sigma = Sigma)
+#' lmvtnorm_temp(x = c(0,0), beta = 0.5,
+#'               sigma_inv = Sigma_inv, logdet_sigma = LogDet_Sigma)
+#' lmvtnorm(x = c(0,0), sigma = Sigma/0.5)
+#' dmvtnorm(x = c(0,0), sigma = Sigma/0.5) |> log()
+#'
+#' L <- t(chol(Sigma))
+#' rmvtnorm_temp(n = 1000, sigma = Sigma) |> plot()
+#' rmvtnorm_temp(n = 1000, LChol_sigma = L) |> plot()
+#'
+#' rmvtnorm_temp(n = 1, mu = rep(5,3))
+#' rmvtnorm_temp(n = 2, mu = rep(5,3))
+#' rmvtnorm_temp(n = 2, mu = 5, d = 3)
 #'
 #' @export
 #'
@@ -134,9 +232,12 @@ dmvtnorm_temp <- function(x, beta = 1, mu = 0, sigma = NULL,
 }
 #' @rdname lmvtnorm_temp
 #'
+#' @param LChol_sigma (Optional) Lower triangular component of the Cholesky decomposition of `sigma`,
+#' see Details.
+#'
 #' @export
 #'
-rmvtnorm_temp <- function(n, beta = 1, mu, sigma = NULL,
+rmvtnorm_temp <- function(n, beta = 1, mu = rep(0,2), sigma = NULL,
                           LChol_sigma = NULL, d = NULL){
 
   d <- d %||% length(mu)
@@ -152,6 +253,13 @@ rmvtnorm_temp <- function(n, beta = 1, mu, sigma = NULL,
 #'
 lmvtnorm <- function(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL){
   lmvtnorm_temp(x = x, mu = mu, sigma = sigma, sigma_inv = sigma_inv, logdet_sigma = logdet_sigma)
+}
+#' @rdname lmvtnorm_temp
+#'
+#' @export
+#'
+dmvtnorm <- function(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL){
+  dmvtnorm_temp(x = x, mu = mu, sigma = sigma, sigma_inv = sigma_inv, logdet_sigma = logdet_sigma)
 }
 #' @rdname lmvtnorm_temp
 #'
