@@ -1,6 +1,6 @@
 
 
-# Basic Normal log densities and samplers
+##### Basic Normal log densities and samplers #####
 
 #' Tempered Normal log densities and sampler
 #'
@@ -77,7 +77,12 @@ lnorm_temp <- function(x, beta = 1, mean = 0, sd = 1) dnorm(x, mean, sd/sqrt(bet
 #'
 rnorm_temp <- function(n, beta = 1, mean = 0, sd = 1) rnorm(n, mean, sd/sqrt(beta))
 
-# Basic Multivariate normal log densities and samplers
+##### Basic Multivariate normal log densities and samplers ####
+
+#' Multivariate Tempered Normal log densities and samplers
+#'
+#' @export
+#'
 lmvtnorm_temp <- function(x, beta = 1, mu = 0, sigma = NULL,
                           sigma_inv = NULL, logdet_sigma = NULL, d = NULL){
 
@@ -119,6 +124,18 @@ lmvtnorm_temp <- function(x, beta = 1, mu = 0, sigma = NULL,
   }
 
 }
+#' @rdname lmvtnorm_temp
+#'
+#' @export
+#'
+dmvtnorm_temp <- function(x, beta = 1, mu = 0, sigma = NULL,
+                          sigma_inv = NULL, logdet_sigma = NULL, d = NULL){
+  lmvtnorm_temp(x, beta, mu, sigma, sigma_inv, logdet_sigma, d) |> exp()
+}
+#' @rdname lmvtnorm_temp
+#'
+#' @export
+#'
 rmvtnorm_temp <- function(n, beta = 1, mu, sigma = NULL,
                           LChol_sigma = NULL, d = NULL){
 
@@ -129,16 +146,28 @@ rmvtnorm_temp <- function(n, beta = 1, mu, sigma = NULL,
   return(t(x))
 }
 
+#' @rdname lmvtnorm_temp
+#'
+#' @export
+#'
 lmvtnorm <- function(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL){
   lmvtnorm_temp(x = x, mu = mu, sigma = sigma, sigma_inv = sigma_inv, logdet_sigma = logdet_sigma)
 }
+#' @rdname lmvtnorm_temp
+#'
+#' @export
+#'
 rmvtnorm <- function(n, mu = 0, sigma = NULL, LChol_sigma = NULL){
   rmvtnorm_temp(n = n, mu = mu, sigma = sigma, LChol_sigma = LChol_sigma)
 }
 
-# General mixture distribution
-lmix <- function(x, w, ldens, ..., shared_args = NULL){
+####  General mixture distribution ####
 
+#' General Finite Mixture Distribution
+#'
+#' @export
+#'
+lmix <- function(x, w, ldens, ..., shared_args = NULL){
 
   lk <- mapply(function(w, ...) log(w) + ldens(x, ...), w, ..., MoreArgs = shared_args)
 
@@ -148,32 +177,45 @@ lmix <- function(x, w, ldens, ..., shared_args = NULL){
     return(apply(lk, 1, matrixStats::logSumExp))
   }
 
-
 }
+#' @rdname lmix
+#'
+#' @export
+#'
 dmix <- function(x, w, ldens, ..., shared_args = NULL, log = FALSE){
   l <- lmix(x, w, ldens, ..., shared_args = shared_args)
-  if(log){
-    return(l)
-  }
-  return(exp(l))
+  if(log) return(l) else return(exp(l))
 }
+#' @rdname lmix
+#'
+#' @export
+#'
 rmix <- function(n, w, rdens, ..., shared_args = NULL){
-
   z <- sample.int(length(w), size = n, replace = TRUE, prob = w)
   x <- mapply(function(z,...) rdens(n = 1, ...), z, ... , MoreArgs = shared_args)
-
   return(x)
 }
 
-# General tempered unnormalized densities
-ul_temp <- function(x, beta = 1, ldens, ...){
-  beta*ldens(x, ...)
-}
+#### General tempered densities ####
+
+#' General Tempered density generator
+#'
+#' @export
+#'
+ul_temp <- function(x, beta = 1, ldens, ...) beta*ldens(x, ...)
+
+
+#' General Tempered Mixture generator
+#'
+#' @export
+#'
 ulmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL){
-  # debug_aux <- match.call()
-  # print(debug_aux)
   beta*lmix(x, w, ldens, ..., shared_args = shared_args)
 }
+#' @rdname ulmix_temp
+#'
+#' @export
+#'
 lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, z = NULL){
 
   aux_fun <- function(x, aux_beta = beta, aux_w = w,  aux_ldens = ldens, ...,
@@ -199,6 +241,8 @@ lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, z = NULL){
 
 }
 
+#### Univariate Tempered Finite Mixture ####
+
 # Normal Mixture
 lmix_norm <- function(x, w, mean, sd = NULL, shared_sd = 1){
   if(is.null(sd)){
@@ -223,13 +267,10 @@ rmix_norm <- function(n, w, mean, sd = NULL, shared_sd = 1){
 
 }
 
+# Tempered Normal Mixture
 ulmix_norm_temp <- function(x, beta = 1, w, mean, sd = NULL, shared_sd = 1){
   ul_temp(x, beta, lmix_norm, w, mean, sd, shared_sd)
 }
-# lmix_norm_temp <- function(x, beta = 1, w, mean, sd, shared_sd){
-#   z, integrate_args = list(lower = -Inf, upper =))
-# }
-
 ulNorm_mix_temp <- function(x, beta = 1, w = c(0.5, 0.5), mu = c(-5, 5), sd = c(1, 1)){
   ulDens_mix_temp(x, w, ldens = lnorm_temp, ..., common_args = list(beta = beta))
 }
@@ -241,4 +282,4 @@ nlmix_norm_temp <- function(x, beta = 1, w = c(0.5, 0.5), ldens, ..., common_arg
   return(lbeta(x)/z)
 
 }
-#ulmixmvtnorm_temp
+
