@@ -6,7 +6,7 @@ integrate_logdensity <- function(log_dens, dens_args, integrate_args = list(lowe
 
   call_args <- c(list(f = dens), log_dens = log_dens, dens_args = dens_args, integrate_args)
 
-  result <- do.call(integrate, call_args)
+  result <- do.call(stats::integrate, call_args)
 
   if(!silent){
     result

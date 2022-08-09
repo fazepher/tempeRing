@@ -20,10 +20,10 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
   stopifnot(S >= 1)
   stopifnot(0 <= burn && burn < S)
 
-  # If the user didn't we define proposal sampler as indep. normals
+  # If the user didn't, we define the proposal sampler as indep. normals
   sampler <- custom_rw_sampler %||%
     ifelse(d == 1,
-           function(x, scale){ stats::rnorm(n = 1, mean = x, sd = scale) },
+           function(x, scale){ rnorm(n = 1, mean = x, sd = scale) },
            function(x, scale){ mvtnorm::rmvnorm(n = 1, mean = x, sigma = scale) })
 
   # Possibly set seed
@@ -34,7 +34,7 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
   # Get starting point
   if(is.null(x_0)){
     stopifnot(is.numeric(x_0_u) && x_0_u > 0)
-    x_0 <- stats::runif(d, min = -x_0_u, max = x_0_u)
+    x_0 <- runif(d, min = -x_0_u, max = x_0_u)
   }else{
     stopifnot(is.numeric(x_0) && length(x_0) == d)
   }

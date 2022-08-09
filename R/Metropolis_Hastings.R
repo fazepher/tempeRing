@@ -128,7 +128,7 @@ mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_c
   # Acceptance
   delta_l <- (l_prop + lq_p2c) - (l_curr + lq_c2p)
   accepted <- vapply(X = delta_l,
-                     FUN = function(w){ w > 0 || log(stats::runif(1)) <= w },
+                     FUN = function(w){ w > 0 || log(runif(1)) <= w },
                      FUN.VALUE = logical(1))
 
   l_next <- numeric(C)

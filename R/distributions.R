@@ -172,9 +172,9 @@ lmix <- function(x, w, ldens, ..., shared_args = NULL){
   lk <- mapply(function(w, ...) log(w) + ldens(x, ...), w, ..., MoreArgs = shared_args)
 
   if(is.null(dim(lk))){
-    return(matrixStats::logSumExp(lk))
+    return(logSumExp(lk))
   }else{
-    return(apply(lk, 1, matrixStats::logSumExp))
+    return(apply(lk, 1, logSumExp))
   }
 
 }
@@ -232,9 +232,9 @@ lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, z = NULL){
   }
 
   if(is.null(z)){
-    z <- integrate(aux_fun, aux_beta = beta, aux_w = w,
-                   aux_ldens = ldens, ..., aux_shared_args = shared_args, z = z,
-                   lower = -Inf, upper = Inf)$value
+    z <- stats::integrate(aux_fun, aux_beta = beta, aux_w = w,
+                          aux_ldens = ldens, ..., aux_shared_args = shared_args, z = z,
+                          lower = -Inf, upper = Inf)$value
   }
 
   return(aux_fun(x, ..., z = z) - log(z))
@@ -264,22 +264,6 @@ rmix_norm <- function(n, w, mean, sd = NULL, shared_sd = 1){
   }else{
     rmix(n, w, rnorm, mean, sd)
   }
-
-}
-
-# Tempered Normal Mixture
-ulmix_norm_temp <- function(x, beta = 1, w, mean, sd = NULL, shared_sd = 1){
-  ul_temp(x, beta, lmix_norm, w, mean, sd, shared_sd)
-}
-ulNorm_mix_temp <- function(x, beta = 1, w = c(0.5, 0.5), mu = c(-5, 5), sd = c(1, 1)){
-  ulDens_mix_temp(x, w, ldens = lnorm_temp, ..., common_args = list(beta = beta))
-}
-nlmix_norm_temp <- function(x, beta = 1, w = c(0.5, 0.5), ldens, ..., common_args = NULL,
-                            z = NULL, integrate_args = list(lower = -Inf, upper = Inf)){
-
-  lbeta <- function(y){ ulmix_dens(y, w, ldens, ..., common_args = list(beta = beta)) }
-  z <- z %||% do.call(integrate, c(list(f = lbeta), integrate_args))$value
-  return(lbeta(x)/z)
 
 }
 

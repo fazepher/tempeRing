@@ -30,5 +30,6 @@ Imports:
     mvtnorm,
     pracma,
     purrr,
-    rlang
+    rlang,
+    stats
 VignetteBuilder: knitr
