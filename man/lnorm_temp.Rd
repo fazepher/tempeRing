@@ -9,7 +9,7 @@
 \usage{
 lnorm_temp(x, beta = 1, mean = 0, sd = 1)
 
-dnorm_temp(x, beta = 1, mean = 0, sd = 1)
+dnorm_temp(x, beta = 1, mean = 0, sd = 1, log = FALSE)
 
 rnorm_temp(n, beta = 1, mean = 0, sd = 1)
 
@@ -23,6 +23,8 @@ lnorm(x, mean = 0, sd = 1)
 \item{mean}{vector of means.}
 
 \item{sd}{vector of standard deviations.}
+
+\item{log}{For \code{dnorm_temp}, whether to return the log-density or not (the default).}
 
 \item{n}{number of observations.}
 }

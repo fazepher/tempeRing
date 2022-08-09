@@ -85,10 +85,12 @@ lnorm_temp <- function(x, beta = 1, mean = 0, sd = 1){
 
 #' @rdname lnorm_temp
 #'
+#' @param log For `dnorm_temp`, whether to return the log-density or not (the default).
+#'
 #' @export
 #'
-dnorm_temp <- function(x, beta = 1, mean = 0, sd = 1){
-  dnorm(x, mean, sd/sqrt(beta))
+dnorm_temp <- function(x, beta = 1, mean = 0, sd = 1, log = FALSE){
+  dnorm(x, mean, sd/sqrt(beta), log)
 }
 
 #' @rdname lnorm_temp
@@ -229,11 +231,14 @@ lmvtnorm_temp <- function(x, beta = 1, mu = 0, sigma = NULL,
 }
 #' @rdname lmvtnorm_temp
 #'
+#' @param log For `dmvtnorm_temp` and `dmvtnorm`, whether to return the log-density or not (the default).
+#'
 #' @export
 #'
 dmvtnorm_temp <- function(x, beta = 1, mu = 0, sigma = NULL,
-                          sigma_inv = NULL, logdet_sigma = NULL, d = NULL){
-  lmvtnorm_temp(x, beta, mu, sigma, sigma_inv, logdet_sigma, d) |> exp()
+                          sigma_inv = NULL, logdet_sigma = NULL, d = NULL, log = FALSE){
+  l <- lmvtnorm_temp(x, beta, mu, sigma, sigma_inv, logdet_sigma, d)
+  if(log) return(l) else return(exp(l))
 }
 #' @rdname lmvtnorm_temp
 #'
@@ -263,8 +268,10 @@ lmvtnorm <- function(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = N
 #'
 #' @export
 #'
-dmvtnorm <- function(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL){
-  dmvtnorm_temp(x = x, mu = mu, sigma = sigma, sigma_inv = sigma_inv, logdet_sigma = logdet_sigma)
+dmvtnorm <- function(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL, log = FALSE){
+  dmvtnorm_temp(x = x, mu = mu, sigma = sigma,
+                sigma_inv = sigma_inv, logdet_sigma = logdet_sigma,
+                log = log)
 }
 #' @rdname lmvtnorm_temp
 #'
@@ -325,34 +332,7 @@ ul_temp <- function(x, beta = 1, ldens, ...) beta*ldens(x, ...)
 ulmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL){
   beta*lmix(x, w, ldens, ..., shared_args = shared_args)
 }
-#' @rdname ulmix_temp
-#'
-#' @export
-#'
-lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, z = NULL){
 
-  aux_fun <- function(x, aux_beta = beta, aux_w = w,  aux_ldens = ldens, ...,
-                      aux_shared_args = shared_args, z = z){
-
-    ul <- ulmix_temp(x, aux_beta, aux_w, aux_ldens, ..., shared_args = aux_shared_args)
-
-    if(is.null(z)){
-      return(exp(ul))
-    }else{
-      return(ul)
-    }
-
-  }
-
-  if(is.null(z)){
-    z <- stats::integrate(aux_fun, aux_beta = beta, aux_w = w,
-                          aux_ldens = ldens, ..., aux_shared_args = shared_args, z = z,
-                          lower = -Inf, upper = Inf)$value
-  }
-
-  return(aux_fun(x, ..., z = z) - log(z))
-
-}
 
 #### Univariate Tempered Finite Mixture ####
 

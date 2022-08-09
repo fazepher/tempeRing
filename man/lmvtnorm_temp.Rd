@@ -26,7 +26,8 @@ dmvtnorm_temp(
   sigma = NULL,
   sigma_inv = NULL,
   logdet_sigma = NULL,
-  d = NULL
+  d = NULL,
+  log = FALSE
 )
 
 rmvtnorm_temp(
@@ -40,7 +41,14 @@ rmvtnorm_temp(
 
 lmvtnorm(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL)
 
-dmvtnorm(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL)
+dmvtnorm(
+  x,
+  mu = 0,
+  sigma = NULL,
+  sigma_inv = NULL,
+  logdet_sigma = NULL,
+  log = FALSE
+)
 
 rmvtnorm(n, mu = 0, sigma = NULL, LChol_sigma = NULL)
 }
@@ -59,6 +67,8 @@ rmvtnorm(n, mu = 0, sigma = NULL, LChol_sigma = NULL)
 
 \item{d}{Dimension of \code{x}, if NULL (the default) it is taken to be \code{ncol(x)} or \code{length(x)}
 as appropriate;  for random generation, it would be taken as \code{length(mu)}.}
+
+\item{log}{For \code{dmvtnorm_temp} and \code{dmvtnorm}, whether to return the log-density or not (the default).}
 
 \item{LChol_sigma}{(Optional) Lower triangular component of the Cholesky decomposition of \code{sigma},
 see Details.}
