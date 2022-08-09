@@ -24,6 +24,31 @@
 #' \deqn{l_\beta(x) = \beta l(x) = -\beta(x-\mu)^2 / 2\sigma^2 + cte'}
 #' \deqn{X|\beta ~ N(\mu, \sigma/\sqrt\beta)}
 #'
+#' ## Vectorization
+#'
+#' The functions inherit vectorization, so can be used for example with
+#' `ggplot2::geom_function()` to show the flattening effect of tempering
+#'
+#' ```
+#' ggplot() +
+#'   geom_function(fun = dnorm,
+#'                 color = "gray65") +
+#'   geom_function(fun = dnorm_temp,
+#'                 args = list(beta = 0.75),
+#'                 color = "steelblue4") +
+#'   geom_function(fun = dnorm_temp,
+#'                 args = list(beta = 0.5),
+#'                 color = "darkcyan") +
+#'   geom_function(fun = dnorm_temp,
+#'                 args = list(beta = 0.25),
+#'                 color = "blueviolet") +
+#'   geom_function(fun = dnorm_temp,
+#'                 args = list(beta = 0.25^2),
+#'                 color = "maroon4") +
+#'   xlim(-6,6) +
+#'   theme_classic()
+#' ```
+#'
 #'
 #' @param x vector of quantiles.
 #' @param mean vector of means.
@@ -53,30 +78,6 @@
 #'
 #' rnorm_temp(n = 1000, mean = 100, sd = 1) |> hist()
 #' rnorm_temp(n = 1000, beta = 0.1, mean = 100, sd = 1) |> hist()
-#'
-#' # The functions inherit vectorization,
-#' # so can be used for example with ggplot2::geom_function()
-#' # to show the flattening effect of tempering
-#'
-#'if(requireNamespace("ggplot2", quietly = TRUE)){
-#' ggplot() +
-#'   geom_function(fun = dnorm,
-#'                 color = "gray65") +
-#'   geom_function(fun = dnorm_temp,
-#'                 args = list(beta = 0.75),
-#'                 color = "steelblue4") +
-#'   geom_function(fun = dnorm_temp,
-#'                 args = list(beta = 0.5),
-#'                 color = "darkcyan") +
-#'   geom_function(fun = dnorm_temp,
-#'                 args = list(beta = 0.25),
-#'                 color = "blueviolet") +
-#'   geom_function(fun = dnorm_temp,
-#'                 args = list(beta = 0.25^2),
-#'                 color = "maroon4") +
-#'   xlim(-6,6) +
-#'   theme_classic()
-#'}
 #'
 #'
 lnorm_temp <- function(x, beta = 1, mean = 0, sd = 1){

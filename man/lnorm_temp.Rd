@@ -53,27 +53,10 @@ Its tempered version is equivalent to rescaling with new standard deviation \eqn
 and keeping the same mean parameter:
 \deqn{l_\beta(x) = \beta l(x) = -\beta(x-\mu)^2 / 2\sigma^2 + cte'}
 \deqn{X|\beta ~ N(\mu, \sigma/\sqrt\beta)}
-}
-\examples{
+\subsection{Vectorization}{
 
-lnorm_temp(x = 0, beta = 0.5, sd = 1)
-lnorm(0, sd = 1/sqrt(0.5))
-
-lnorm(x = 0)
-dnorm(x = 0, log = TRUE)
-
-dnorm_temp(x = 5, beta = 1)
-dnorm(x = 5)
-
-rnorm_temp(n = 1000, mean = 100, sd = 1) |> hist()
-rnorm_temp(n = 1000, beta = 0.1, mean = 100, sd = 1) |> hist()
-
-# The functions inherit vectorization,
-# so can be used for example with ggplot2::geom_function()
-# to show the flattening effect of tempering
-
-if(requireNamespace("ggplot2", quietly = TRUE)){
-ggplot() +
+The functions inherit vectorization, so can be used for example with
+\code{ggplot2::geom_function()} to show the flattening effect of tempering\preformatted{ggplot() +
   geom_function(fun = dnorm,
                 color = "gray65") +
   geom_function(fun = dnorm_temp,
@@ -91,6 +74,21 @@ ggplot() +
   xlim(-6,6) +
   theme_classic()
 }
+}
+}
+\examples{
+
+lnorm_temp(x = 0, beta = 0.5, sd = 1)
+lnorm(0, sd = 1/sqrt(0.5))
+
+lnorm(x = 0)
+dnorm(x = 0, log = TRUE)
+
+dnorm_temp(x = 5, beta = 1)
+dnorm(x = 5)
+
+rnorm_temp(n = 1000, mean = 100, sd = 1) |> hist()
+rnorm_temp(n = 1000, beta = 0.1, mean = 100, sd = 1) |> hist()
 
 
 }
