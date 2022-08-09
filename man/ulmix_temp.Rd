@@ -2,12 +2,9 @@
 % Please edit documentation in R/Distributions.R
 \name{ulmix_temp}
 \alias{ulmix_temp}
-\alias{lmix_temp}
 \title{General Tempered Mixture generator}
 \usage{
 ulmix_temp(x, beta = 1, w, ldens, ..., shared_args = NULL)
-
-lmix_temp(x, beta = 1, w, ldens, ..., shared_args = NULL, z = NULL)
 }
 \description{
 General Tempered Mixture generator

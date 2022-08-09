@@ -333,6 +333,26 @@ ulmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL){
   beta*lmix(x, w, ldens, ..., shared_args = shared_args)
 }
 
+lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, z = NULL){
+
+  aux_fun <- function(x, aux_beta = beta, aux_w = w,  aux_ldens = ldens, ...,
+                      aux_shared_args = shared_args, z = z){
+
+    ul <- ulmix_temp(x, aux_beta, aux_w, aux_ldens, ..., shared_args = aux_shared_args)
+
+    if(is.null(z)) return(exp(ul)) else return(ul)
+
+  }
+
+  if(is.null(z)){
+    z <- stats::integrate(aux_fun, aux_beta = beta, aux_w = w,
+                          aux_ldens = ldens, ..., aux_shared_args = shared_args, z = z,
+                          lower = -Inf, upper = Inf)$value
+  }
+
+  return(aux_fun(x, ..., z = z) - log(z))
+
+}
 
 #### Univariate Tempered Finite Mixture ####
 
