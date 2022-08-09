@@ -1,6 +1,4 @@
 
-`%||%` <- function(x,y) rlang::`%||%`(x,y)
-
 integrate_logdensity <- function(log_dens, dens_args, integrate_args = list(lower = -Inf, upper = Inf),
                                  silent = FALSE){
 
