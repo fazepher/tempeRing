@@ -58,20 +58,25 @@
 #' # so can be used for example with ggplot2::geom_function()
 #' # to show the flattening effect of tempering
 #'
+#'if(requireNamespace("ggplot2", quietly = TRUE)){
 #' ggplot() +
 #'   geom_function(fun = dnorm,
 #'                 color = "gray65") +
-#'   geom_function(fun = dnorm_temp, args = list(beta = 0.75),
+#'   geom_function(fun = dnorm_temp,
+#'                 args = list(beta = 0.75),
 #'                 color = "steelblue4") +
-#'   geom_function(fun = dnorm_temp, args = list(beta = 0.5),
+#'   geom_function(fun = dnorm_temp,
+#'                 args = list(beta = 0.5),
 #'                 color = "darkcyan") +
-#'   geom_function(fun = dnorm_temp, args = list(beta = 0.25),
+#'   geom_function(fun = dnorm_temp,
+#'                 args = list(beta = 0.25),
 #'                 color = "blueviolet") +
-#'   geom_function(fun = dnorm_temp, args = list(beta = 0.25^2),
+#'   geom_function(fun = dnorm_temp,
+#'                 args = list(beta = 0.25^2),
 #'                 color = "maroon4") +
 #'   xlim(-6,6) +
 #'   theme_classic()
-#'
+#'}
 #'
 #'
 lnorm_temp <- function(x, beta = 1, mean = 0, sd = 1){
