@@ -283,7 +283,90 @@ rmvtnorm <- function(n, mu = 0, sigma = NULL, LChol_sigma = NULL){
 
 ####  General mixture distribution ####
 
-#' General Finite Mixture Distribution
+#' General Finite Mixture log densities and samplers
+#'
+#' Log-density, density, and random generation of a mixture of a user specified
+#' common parametric **log-density** (or distribution for sampling), according to some
+#' mixture weights `w`.
+#'
+#' In general, suppose we have a parametric family of distributions such that \eqn{f(x | \theta)}
+#' is the density given the parameter vector \eqn{\theta}. A K component mixture of this
+#' distribution with non-negative weights \eqn{w_1,...,w_K} such thath \eqn{\sum w_k = 1} has
+#' density
+#' \deqn{f(x|w,\Theta) = \sum w_k f(x|\theta_k)}
+#' where \eqn{\theta_k} represent the specific parameters that the k-th component takes.
+#'
+#' For numerical reasons, it is recommended to work on the log-scale so that for a desired
+#' distribution, the corresponding mixture can be generated from the log-densities
+#' \eqn{l(x|\theta) = log( f(x | theta))}, via de Log-Sum-Exp form (see [matrixStats::logSumExp]):
+#' \deqn{l(x|w,\Theta) = LSE[log(w_k) + l(x)|\theta_k)] over k = 1,... K}
+#'
+#' # Component Parameters
+#'
+#' Each of the mixture components would have their specific values of the parameters \eqn{\theta_k}.
+#' But some parameters may remain fixed across components. For example, suppose we want to work
+#' with a mixture of normal distributions in which all components have the same standard deviation
+#' but different means. There are, at least, two ways of evaluating a log-density in this scenario;
+#' namely, repeat the shared parameters and treat them as if they were varying through `...`
+#' or provide them via the `shared_args` list:
+#'
+#' ```
+#' lmix(x = 0, w = c(0.5, 0.5), ldens = lnorm,
+#'      mean = c(-1, 1), sd = c(1, 1))
+#'
+#' lmix(x = 0, w = c(0.5, 0.5), ldens = lnorm,
+#'      mean = c(-1,1), shared_args = list(sd = 1))
+#'
+#' ```
+#'
+#' Component parameters fed through `...` are passed on to `mapply`, so they need to be
+#' unambigously iterable across mixture components, thus it is recommended to pass them as lists
+#' if we want to avoid surprises. For instance, if now we wanted to evaluate a density for
+#' a mixture of multivariate normals,  we can pass the means and covariances as lists of k
+#' elements each.
+#'
+#' ```
+#' dmix(x=c(0,0), w = c(0.2, 0.8), ldens = lmvtnorm,
+#'      mu = list(c(-3, -3), c(1, 1)),
+#'      sigma = list(diag(0.5,2), diag(0.5,2)))
+#'
+#' dmix(x=c(0,0), w = c(0.2, 0.8), ldens = lmvtnorm,
+#'      mu = list(c(-3,3), c(1,1)),
+#'      shared_args = list(sigma = diag(0.5,2)))
+#'
+#' ```
+#'
+#' The behavior for generating random samples is different, though. As each sample is only
+#' generated from a given component and there is, in general, no need to sweep through the parameters
+#' of each component. For this reason, in this case component parameters are passed as a single linst
+#' in which each element contains the parameters of each component. In the multivariate normal mixture
+#' scenario this is:
+#'
+#' ```
+#' rmix(n=3, w = c(0.2, 0.8), rdist = rmvtnorm,
+#'      comp_args_list = list(k1 = list(mu = c(-3, 3)),
+#'                            k2 = list(mu = c(1, 1))),
+#'      shared_args = list(sigma = diag(0.5,2)))
+#'
+#' rmix(n=3, w = c(0.2, 0.8), rdist = rmvtnorm,
+#'      comp_args_list = list(k1 = list(mu = c(-3, 3)),
+#'                            k2 = list(mu = c(1, 1))),
+#'      shared_args = list(sigma = diag(0.5,2)),
+#'      simplify = TRUE)
+#'
+#' ```
+#'
+#'
+#' @param x A quantile or quantiles if `ldens` allows for vectorization.
+#' @param w A vector of non-negative mixture weights. To be a valid mixture they must sum to 1.
+#' @param ldens A function that returns the log-density of the desired common mixture distribution.
+#' @param ... Other arguments passed on to `ldens` that vary by mixture component
+#' (see Component Parameters).
+#' @param shared_args List of other arguments passed on to `ldens` who are shared
+#' by all mixture components (see Component Parameters).
+#'
+#' @seealso [lmix_norm], [lmix_mvtnorm], [lmix_skewnorm] for some specific mixtures or [lmix_temp]
+#' and [ulmix_temp] for tempered versions.
 #'
 #' @export
 #'
@@ -300,6 +383,8 @@ lmix <- function(x, w, ldens, ..., shared_args = NULL){
 }
 #' @rdname lmix
 #'
+#' @param log For `dmix`, whether to return the log-density or not (the default).
+#'
 #' @export
 #'
 dmix <- function(x, w, ldens, ..., shared_args = NULL, log = FALSE){
@@ -308,11 +393,28 @@ dmix <- function(x, w, ldens, ..., shared_args = NULL, log = FALSE){
 }
 #' @rdname lmix
 #'
+#' @param rdist For `rmix`, sampler function of the desired parametric distribution, whose first
+#' argument must be named `n` and refer to a number of samples asked from it.
+#' @param comp_args_list For `rmix`, a list whose k-th element contains the
+#' list of parameters specific to the k-th mixture component (see Component Parameters).
+#' @param simplify For `rmix` whether to attempt to simplify the list of
+#' generated samples into an array or not (the default).
+#'
 #' @export
 #'
-rmix <- function(n, w, rdens, ..., shared_args = NULL){
-  z <- sample.int(length(w), size = n, replace = TRUE, prob = w)
-  x <- mapply(function(z,...) rdens(n = 1, ...), z, ... , MoreArgs = shared_args)
+rmix <- function(n, w, rdist, comp_args_list, shared_args = NULL, simplify = FALSE){
+
+  # Select components according to w
+  k_vec <- sample.int(length(w), size = n, replace = TRUE, prob = w)
+
+  # Sample from the distribution
+  if(simplify){
+    x <- sapply(k_vec, function(k) do.call(rdist, c(list(n=1), comp_args_list[[k]], shared_args)),
+                simplify = TRUE)
+  }else{
+    x <- lapply(k_vec, function(k) do.call(rdist, c(list(n=1), comp_args_list[[k]], shared_args)))
+  }
+
   return(x)
 }
 

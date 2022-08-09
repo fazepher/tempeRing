@@ -4,14 +4,103 @@
 \alias{lmix}
 \alias{dmix}
 \alias{rmix}
-\title{General Finite Mixture Distribution}
+\title{General Finite Mixture log densities and samplers}
 \usage{
 lmix(x, w, ldens, ..., shared_args = NULL)
 
 dmix(x, w, ldens, ..., shared_args = NULL, log = FALSE)
 
-rmix(n, w, rdens, ..., shared_args = NULL)
+rmix(n, w, rdist, comp_args_list, shared_args = NULL, simplify = FALSE)
+}
+\arguments{
+\item{x}{A quantile or quantiles if \code{ldens} allows for vectorization.}
+
+\item{w}{A vector of non-negative mixture weights. To be a valid mixture they must sum to 1.}
+
+\item{ldens}{A function that returns the log-density of the desired common mixture distribution.}
+
+\item{...}{Other arguments passed on to \code{ldens} that vary by mixture component
+(see Component Parameters).}
+
+\item{shared_args}{List of other arguments passed on to \code{ldens} who are shared
+by all mixture components (see Component Parameters).}
+
+\item{log}{For \code{dmix}, whether to return the log-density or not (the default).}
+
+\item{rdist}{For \code{rmix}, sampler function of the desired parametric distribution, whose first
+argument must be named \code{n} and refer to a number of samples asked from it.}
+
+\item{comp_args_list}{For \code{rmix}, a list whose k-th element contains the
+list of parameters specific to the k-th mixture component (see Component Parameters).}
+
+\item{simplify}{For \code{rmix} whether to attempt to simplify the list of
+generated samples into an array or not (the default).}
 }
 \description{
-General Finite Mixture Distribution
+Log-density, density, and random generation of a mixture of a user specified
+common parametric \strong{log-density} (or distribution for sampling), according to some
+mixture weights \code{w}.
+}
+\details{
+In general, suppose we have a parametric family of distributions such that \eqn{f(x | \theta)}
+is the density given the parameter vector \eqn{\theta}. A K component mixture of this
+distribution with non-negative weights \eqn{w_1,...,w_K} such thath \eqn{\sum w_k = 1} has
+density
+\deqn{f(x|w,\Theta) = \sum w_k f(x|\theta_k)}
+where \eqn{\theta_k} represent the specific parameters that the k-th component takes.
+
+For numerical reasons, it is recommended to work on the log-scale so that for a desired
+distribution, the corresponding mixture can be generated from the log-densities
+\eqn{l(x|\theta) = log( f(x | theta))}, via de Log-Sum-Exp form (see \link[matrixStats:logSumExp]{matrixStats::logSumExp}):
+\deqn{l(x|w,\Theta) = LSE[log(w_k) + l(x)|\theta_k)] over k = 1,... K}
+}
+\section{Component Parameters}{
+Each of the mixture components would have their specific values of the parameters \eqn{\theta_k}.
+But some parameters may remain fixed across components. For example, suppose we want to work
+with a mixture of normal distributions in which all components have the same standard deviation
+but different means. There are, at least, two ways of evaluating a log-density in this scenario;
+namely, repeat the shared parameters and treat them as if they were varying through \code{...}
+or provide them via the \code{shared_args} list:\preformatted{lmix(x = 0, w = c(0.5, 0.5), ldens = lnorm,
+     mean = c(-1, 1), sd = c(1, 1))
+
+lmix(x = 0, w = c(0.5, 0.5), ldens = lnorm,
+     mean = c(-1,1), shared_args = list(sd = 1))
+
+}
+
+Component parameters fed through \code{...} are passed on to \code{mapply}, so they need to be
+unambigously iterable across mixture components, thus it is recommended to pass them as lists
+if we want to avoid surprises. For instance, if now we wanted to evaluate a density for
+a mixture of multivariate normals,  we can pass the means and covariances as lists of k
+elements each.\preformatted{dmix(x=c(0,0), w = c(0.2, 0.8), ldens = lmvtnorm,
+     mu = list(c(-3, -3), c(1, 1)),
+     sigma = list(diag(0.5,2), diag(0.5,2)))
+
+dmix(x=c(0,0), w = c(0.2, 0.8), ldens = lmvtnorm,
+     mu = list(c(-3,3), c(1,1)),
+     shared_args = list(sigma = diag(0.5,2)))
+
+}
+
+The behavior for generating random samples is different, though. As each sample is only
+generated from a given component and there is, in general, no need to sweep through the parameters
+of each component. For this reason, in this case component parameters are passed as a single linst
+in which each element contains the parameters of each component. In the multivariate normal mixture
+scenario this is:\preformatted{rmix(n=3, w = c(0.2, 0.8), rdist = rmvtnorm,
+     comp_args_list = list(k1 = list(mu = c(-3, 3)),
+                           k2 = list(mu = c(1, 1))),
+     shared_args = list(sigma = diag(0.5,2)))
+
+rmix(n=3, w = c(0.2, 0.8), rdist = rmvtnorm,
+     comp_args_list = list(k1 = list(mu = c(-3, 3)),
+                           k2 = list(mu = c(1, 1))),
+     shared_args = list(sigma = diag(0.5,2)),
+     simplify = TRUE)
+
+}
+}
+
+\seealso{
+\link{lmix_norm}, \link{lmix_mvtnorm}, \link{lmix_skewnorm} for some specific mixtures or \link{lmix_temp}
+and \link{ulmix_temp} for tempered versions.
 }

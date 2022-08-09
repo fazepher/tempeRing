@@ -29,7 +29,7 @@ test_that("Multivariate normal works", {
 })
 
 
-test_that("lmix_temp works", {
+test_that("Mixtures work", {
 
   correcto_z <- integrate(function(x) (0.5*dnorm(x, mean = -5) + 0.5*dnorm(x, mean = 5))^0.5,
                           lower = -Inf, upper = Inf)$value
