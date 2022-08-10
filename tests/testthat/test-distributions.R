@@ -1,6 +1,5 @@
 
 test_that("Multivariate normal works", {
-  # expect_equal(lmvtnorm_temp(x, beta = 1, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL))
 
   zeros_5 <- rep(0, 5)
   mean_5 <- c(1,0.5,0.6,0.75,0.8)
@@ -25,18 +24,30 @@ test_that("Multivariate normal works", {
 
   # We are missing a Wishart test or other kind for normality
   # expect_equal(rmvtnorm_temp(n=1000, beta_2, mu = mean_2))
+  # Also including LChol_sigma
 
 })
 
 
 test_that("Mixtures work", {
 
+  x <- seq(-3,3,length.out = 100)
+  # The more complex function at least recovers simple mixtures
+  expect_equal(lmix(x,c(0.1,0.3,0.6),lnorm, mean = c(-5,0,2), sd = rep(1,3)),
+               log(0.1*dnorm(x,mean=-5) + 0.3*dnorm(x,mean=0)+0.6*dnorm(x,mean=2)))
+  # This difference in passed arguments is equivalent
+  expect_equal(lmix(x, c(0.1,0.3,0.6),lnorm, mean = c(-5,0,2), sd = rep(1,3)),
+               lmix(x, c(0.1,0.3,0.6),lnorm, mean = c(-5,0,2), shared_args = list(sd = 1)))
+
+
+  # The tempered mixture with recursive function definition works
   correcto_z <- integrate(function(x) (0.5*dnorm(x, mean = -5) + 0.5*dnorm(x, mean = 5))^0.5,
                           lower = -Inf, upper = Inf)$value
   correcto <- ((0.5*dnorm(5, mean = -5) + 0.5*dnorm(5, mean = 5))^0.5)/correcto_z
   correcto_log <- log(correcto)
 
   expect_equal(lmix_temp(5, beta = 0.5, w = c(0.5, 0.5), ldens = lnorm, mean = c(-5, 5),
-                         shared_args = list(sd = 1), z = NULL), correcto_log)
+                         shared_args = list(sd = 1), log_z = NULL),
+               correcto_log)
 
 })
