@@ -502,17 +502,73 @@ ulmix_norm_temp <- function(x, beta = 1, w, mean, sd = NULL, shared_sd = 1){
 
 #### Finite Mixture of Multivariate Normals ####
 
+#' Finite Mixture of Multivariate Normal distributions
+#'
+#' Log-density, density, random sampling from a finite mixture of multivariate normal distributions,
+#' as well as unnormalized log-density of the tempered mixture.
+#'
+#' The tempering in `ulmix_mvtnorm_temp` is done *after* the mixture; this is not to be confused
+#' with a mixture of tempered multivariate normals. This latter scenario would just be a
+#' regular mixture of multivariate normals, corresponding to `lmix_mvtnorm`,
+#' as tempering a multivariate normal just rescales it (see [lmvtnorm_temp]).
+#'
+#' ## Component Parameters
+#'
+#' See the documentation for [lmix] for a lengthier exposition of the difference between passing
+#' arguments via `...` or `shared_args`, while the documentation of [lmvtnorm] explains the specific
+#' parameters available for the multivariate normal components of the mixture. These may typically
+#' be lists for `mu` and `sigma`, passed through the `...` argument. But in case the scales are
+#' the same for each component (or for the common dimension parameter `d`), the `shared_args`
+#' list would be useful.
+#'
+#' @inheritParams lmvtnorm
+#' @param w A vector of non-negative mixture weights. To be a valid mixture they must sum to 1.
+#' @param ... Other arguments passed on to `lmvtnorm` that vary by mixture component
+#' (see Component Parameters)
+#' @param shared_args	 List of other arguments passed on to `lmvtnorm` who are shared by all
+#' mixture components (see Component Parameters).
+#'
+#' @returns
+#'
+#' `lmix_mvtnorm` gives the log-density, `dmix_mvtnorm` the density and
+#' `rmix_mvtnorm` generates random samples. Finally, `ulmix_mvtnorm_temp` gives the
+#' unnormalized log-density of the tempered mixture.
+#'
+#' @export
+#'
 lmix_mvtnorm <- function(x, w, ..., shared_args = NULL){
   lmix(x, w, lmvtnorm, ..., shared_args = shared_args)
 }
+
+#' @rdname lmix_mvtnorm
+#' @param log For `dmix_mvtnorm`, whether to return the log-density or not (the default).
+#'
+#' @export
+#'
 dmix_mvtnorm <- function(x, w, ..., shared_args = NULL, log = FALSE){
   dmix(x, w, dmvtnorm, ..., shared_args = shared_args, log = log)
 }
-rmix_mvtnorm <- function(n, w, comp_args_list, shared_args = NULL, simplify = FALSE){
+
+#' @rdname lmix_mvtnorm
+#'
+#' @inheritParams rmix
+#' @param comp_args_list For `rmix_mvtnorm`, a list whose k-th element contains the list of
+#' parameters specific to the k-th mixture component (see Component Parameters).
+#'
+#' @export
+#'
+rmix_mvtnorm <- function(n, w, comp_args_list, shared_args = NULL){
   rmix(n, w, rdist = rmvtnorm,
        comp_args_list = comp_args_list, shared_args = shared_args,
-       simplify = simplify)
+       simplify = TRUE)
 }
+
+#' @rdname lmix_mvtnorm
+#'
+#' @inheritParams lmvtnorm_temp
+#'
+#' @export
+#'
 ulmix_mvtnorm_temp <- function(x, beta = 1, w, ..., shared_args = NULL){
   beta*lmix_mvtnorm(x, w, ..., shared_args = shared_args)
 }
