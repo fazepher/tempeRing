@@ -50,4 +50,13 @@ test_that("Mixtures work", {
                          shared_args = list(sd = 1), log_z = NULL),
                correcto_log)
 
+
+  expect_equal(ulmix_mvtnorm_temp(x = c(5,5), w = c(0.5,0.5), mu = list(c(-5,-5),c(5,5))),
+               log(0.5*(mvtnorm::dmvnorm(c(5,5),mean = c(-5,-5)) +
+                          mvtnorm::dmvnorm(c(5,5),mean = c(5,5)))))
+  expect_equal(ulmix_mvtnorm_temp(x = c(5,5), beta = 0.3^7, w = c(0.5,0.5),
+                                  mu = list(c(-5,-5),c(5,5)), sigma = list(diag(2,2),diag(4,2))),
+               0.3^7*log(0.5*(mvtnorm::dmvnorm(c(5,5),mean = c(-5,-5), sigma = diag(2,2)) +
+                                mvtnorm::dmvnorm(c(5,5),mean = c(5,5), sigma = diag(4,2)))))
+
 })

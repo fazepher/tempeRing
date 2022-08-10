@@ -500,6 +500,23 @@ ulmix_norm_temp <- function(x, beta = 1, w, mean, sd = NULL, shared_sd = 1){
   }
 }
 
+#### Finite Mixture of Multivariate Normals ####
+
+lmix_mvtnorm <- function(x, w, ..., shared_args = NULL){
+  lmix(x, w, lmvtnorm, ..., shared_args = shared_args)
+}
+dmix_mvtnorm <- function(x, w, ..., shared_args = NULL, log = FALSE){
+  dmix(x, w, dmvtnorm, ..., shared_args = shared_args, log = log)
+}
+rmix_mvtnorm <- function(n, w, comp_args_list, shared_args = NULL, simplify = FALSE){
+  rmix(n, w, rdist = rmvtnorm,
+       comp_args_list = comp_args_list, shared_args = shared_args,
+       simplify = simplify)
+}
+ulmix_mvtnorm_temp <- function(x, beta = 1, w, ..., shared_args = NULL){
+  beta*lmix_mvtnorm(x, w, ..., shared_args = shared_args)
+}
+
 #### General tempered densities ####
 
 # Mostly for completeness and as a simpler version to code than the mixture ones,
