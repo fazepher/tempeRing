@@ -70,6 +70,8 @@ as appropriate;  for random generation, it would be taken as \code{length(mu)}.}
 
 \item{log}{For \code{dmvtnorm_temp} and \code{dmvtnorm}, whether to return the log-density or not (the default).}
 
+\item{n}{Number of observations.}
+
 \item{LChol_sigma}{(Optional) Lower triangular component of the Cholesky decomposition of \code{sigma},
 see Details.}
 }

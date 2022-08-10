@@ -50,11 +50,11 @@
 #' ```
 #'
 #'
-#' @param x vector of quantiles.
-#' @param mean vector of means.
-#' @param sd vector of standard deviations.
-#' @param beta inverse temperature parameter \eqn{\beta > 0}.
-#' @param n number of observations.
+#' @param x Vector of quantiles.
+#' @param mean Vector of means.
+#' @param sd Vector of standard deviations.
+#' @param beta Inverse temperature parameter \eqn{\beta > 0}.
+#' @param n Number of observations.
 #'
 #' @returns
 #' The preffix `l` stands for log-density, `d` for density, and `r` for sampling.
@@ -230,6 +230,7 @@ lmvtnorm_temp <- function(x, beta = 1, mu = 0, sigma = NULL,
   }
 
 }
+
 #' @rdname lmvtnorm_temp
 #'
 #' @param log For `dmvtnorm_temp` and `dmvtnorm`, whether to return the log-density or not (the default).
@@ -241,8 +242,10 @@ dmvtnorm_temp <- function(x, beta = 1, mu = 0, sigma = NULL,
   l <- lmvtnorm_temp(x, beta, mu, sigma, sigma_inv, logdet_sigma, d)
   if(log) return(l) else return(exp(l))
 }
+
 #' @rdname lmvtnorm_temp
 #'
+#' @inheritParams rnorm_temp
 #' @param LChol_sigma (Optional) Lower triangular component of the Cholesky decomposition of `sigma`,
 #' see Details.
 #'
@@ -265,6 +268,7 @@ rmvtnorm_temp <- function(n, beta = 1, mu = rep(0,2), sigma = NULL,
 lmvtnorm <- function(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = NULL){
   lmvtnorm_temp(x = x, mu = mu, sigma = sigma, sigma_inv = sigma_inv, logdet_sigma = logdet_sigma)
 }
+
 #' @rdname lmvtnorm_temp
 #'
 #' @export
@@ -274,6 +278,7 @@ dmvtnorm <- function(x, mu = 0, sigma = NULL, sigma_inv = NULL, logdet_sigma = N
                 sigma_inv = sigma_inv, logdet_sigma = logdet_sigma,
                 log = log)
 }
+
 #' @rdname lmvtnorm_temp
 #'
 #' @export
@@ -366,8 +371,8 @@ rmvtnorm <- function(n, mu = 0, sigma = NULL, LChol_sigma = NULL){
 #' @param shared_args List of other arguments passed on to `ldens` who are shared
 #' by all mixture components (see Component Parameters).
 #'
-#' @seealso [lmix_norm], [lmix_mvtnorm], [lmix_skewnorm] for some specific mixtures or [lmix_temp]
-#' and [ulmix_temp] for tempered versions.
+#' @seealso [lmix_norm], [lmix_mvtnorm], [lmix_skewnorm] for some specific mixtures.
+#' For some tempered mixtures see [ulmix_norm_temp] or [ulmix_temp] in general.
 #'
 #' @export
 #'
@@ -394,6 +399,7 @@ dmix <- function(x, w, ldens, ..., shared_args = NULL, log = FALSE){
 }
 #' @rdname lmix
 #'
+#' @inheritParams rnorm_temp
 #' @param rdist For `rmix`, sampler function of the desired parametric distribution, whose first
 #' argument must be named `n` and refer to a number of samples asked from it.
 #' @param comp_args_list For `rmix`, a list whose k-th element contains the
@@ -419,47 +425,31 @@ rmix <- function(n, w, rdist, comp_args_list, shared_args = NULL, simplify = FAL
   return(x)
 }
 
-#### General tempered densities ####
+#### Finite Mixture of Normals ####
 
-#' General Tempered density generator
+#' Finite Mixture of Normal distributions
+#'
+#' Log-density, density, random sampling from a finite mixture of normal distributions,
+#' as well as unnormalized log-density of the tempered mixture.
+#'
+#' The tempering in `ulmix_norm_temp` is done *after* the mixture; this is not to be confused
+#' with a mixture of tempered normals. This latter scenario would just be a regular mixture of normals,
+#' corresponding to `lmix_norm`, as tempering a normal just rescales it (see [lnorm_temp]).
+#'
+#'
+#' @inheritParams lnorm
+#' @inheritParams lmix
+#' @param mean Vector containing the means of the components
+#' @param sd (Optional) Vector containing the standard deviations of the components
+#' @param shared_sd Shared standard deviation of the components; for different scales use `sd`.
+#'
+#' @returns
+#'
+#' `lmix_norm` gives the log-density, `dmix_norm` the density and `rmix_norm` generates random samples.
+#' Finally, `ulmix_norm_temp` gives the unnormalized log-density of the tempered mixture.
 #'
 #' @export
 #'
-ul_temp <- function(x, beta = 1, ldens, ...) beta*ldens(x, ...)
-
-
-#' General Tempered Mixture generator
-#'
-#' @export
-#'
-ulmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL){
-  beta*lmix(x, w, ldens, ..., shared_args = shared_args)
-}
-
-lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, z = NULL){
-
-  aux_fun <- function(x, aux_beta = beta, aux_w = w,  aux_ldens = ldens, ...,
-                      aux_shared_args = shared_args, z = z){
-
-    ul <- ulmix_temp(x, aux_beta, aux_w, aux_ldens, ..., shared_args = aux_shared_args)
-
-    if(is.null(z)) return(exp(ul)) else return(ul)
-
-  }
-
-  if(is.null(z)){
-    z <- stats::integrate(aux_fun, aux_beta = beta, aux_w = w,
-                          aux_ldens = ldens, ..., aux_shared_args = shared_args, z = z,
-                          lower = -Inf, upper = Inf)$value
-  }
-
-  return(aux_fun(x, ..., z = z) - log(z))
-
-}
-
-#### Univariate Tempered Finite Mixture ####
-
-# Normal Mixture
 lmix_norm <- function(x, w, mean, sd = NULL, shared_sd = 1){
   if(is.null(sd)){
     lmix(x, w, lnorm, mean, shared_args = list(sd = shared_sd))
@@ -467,6 +457,13 @@ lmix_norm <- function(x, w, mean, sd = NULL, shared_sd = 1){
     lmix(x, w, lnorm, mean, sd)
   }
 }
+
+#' @rdname lmix_norm
+#'
+#' @param log For `dmix_norm`, whether to return the log-density or not (the default).
+#'
+#' @export
+#'
 dmix_norm <- function(x, w, mean, sd = NULL, shared_sd = 1, log = FALSE){
   if(is.null(sd)){
     dmix(x, w, lnorm, mean, shared_args = list(sd = shared_sd), log = log)
@@ -474,12 +471,135 @@ dmix_norm <- function(x, w, mean, sd = NULL, shared_sd = 1, log = FALSE){
     dmix(x, w, lnorm, mean, sd, log = log)
   }
 }
+
+#' @rdname lmix_norm
+#'
+#' @inheritParams rnorm_temp
+#'
+#' @export
+#'
 rmix_norm <- function(n, w, mean, sd = NULL, shared_sd = 1){
   if(is.null(sd)){
     rmix(n, w, rnorm, mean, shared_args = list(sd = shared_sd))
   }else{
     rmix(n, w, rnorm, mean, sd)
   }
+}
+
+#' @rdname lmix_norm
+#'
+#' @inheritParams lnorm_temp
+#'
+#' @export
+#'
+ulmix_norm_temp <- function(x, beta = 1, w, mean, sd = NULL, shared_sd = 1){
+  if(is.null(sd)){
+    beta*lmix(x, w, lnorm, mean, shared_args = list(sd = shared_sd))
+  }else{
+    beta*lmix(x, w, lnorm, mean, sd)
+  }
+}
+
+#### General tempered densities ####
+
+# Mostly for completeness and as a simpler version to code than the mixture ones,
+# hence they are not exported for now.
+ul_temp <- function(x, beta = 1, ldens, ...){
+  beta*ldens(x, ...)
+}
+l_temp <- function(x, beta = 1, ldens, ..., z = NULL){
+
+  aux_fun <- function(y, aux_beta = beta, aux_ldens = ldens, ...,
+                      aux_dens_is_log = dens_is_log, lz = lz){
+
+    ul <- ul_temp(y, aux_beta, aux_ldens, ..., dens_is_log = aux_dens_is_log)
+
+    if(is.null(z)) return(exp(ul)) else return(ul)
+
+  }
+
+  if(is.null(z)){
+    z <- stats::integrate(aux_fun, aux_beta = beta, aux_ldens = ldens, ..., z = z,
+                          lower = -Inf, upper = Inf)$value
+  }
+
+  return(aux_fun(x, ..., z = z) - log(z))
+
+}
+
+#### General Tempered Mixtures ####
+
+#'
+#' Tempered Mixture log densities generator
+#'
+#' @description
+#' Unnormalized and normalized log-tempered densities from a mixture of a user defined
+#' **log-density**.
+#'
+#' While mixing densities still yields a normalized density, tempering *does not* do so
+#' and requires renormalization. Hence, the direct result of tempering is the unnormalized
+#' `ulmix_temp`. The normalized version `lmix_temp` is provided mainly for **univariate** log-densities,
+#' where internal numerical integration is used via `stats::integrate`.
+#'
+#' ## Component Parameters
+#'
+#' Same behavior as [lmix]: `...` expects iterable arguments to be swept across all components while
+#' `shared_args` is a list of shared arguments across components.
+#' For a more detailed explanation please see the documentation and examples in [lmix].
+#'
+#' @details
+#' When using `lmix_temp` for general *multivariate* mixtures, the user should provide the
+#' normalizing constant `log_z` (in the log scale). This parameter can also be useful for efficiency in
+#' one-dimensional situations, as one would avoid estimating it at every call.
+#' Note, however, that many tasks in the context of the package don't necessarily require the
+#' normalized version; this function is provided for completeness and as a tool
+#' for those situations were the normalized versions are indeed sought.
+#'
+#' @inheritParams lmix
+#' @param beta Inverse temperature parameter β > 0.
+#' @param ldens A function that returns the log-density of the desired common mixture distribution.
+#' For `lmix_temp` see Details for restrictions on multivariate densities.
+#'
+#'
+#' @returns
+#' `ulmix_temp` returns the unnormalized log-density of the mixture, while `lmix_temp` estimates
+#' the normalized value.
+#'
+#' @seealso [lmix] [ulmix_norm_temp]
+#'
+#' @export
+#'
+ulmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL){
+  beta*lmix(x, w, ldens, ..., shared_args = shared_args)
+}
+
+#' @rdname ulmix_temp
+#'
+#' @param log_z For `lmix_temp`, normalizing constant. If NULL (the default) it is estimated
+#' via `stats::integrate`. Hence, while optional for univariate mixtures, it is necessary
+#' for proper behavior on multivariate mixtures (see Details).
+#'
+#' @export
+#'
+lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, log_z = NULL){
+
+  aux_fun <- function(x, aux_beta = beta, aux_w = w,  aux_ldens = ldens, ...,
+                      aux_shared_args = shared_args, log_z = log_z){
+
+    ul <- ulmix_temp(x, aux_beta, aux_w, aux_ldens, ..., shared_args = aux_shared_args)
+
+    if(is.null(log_z)) return(exp(ul)) else return(ul)
+
+  }
+
+  if(is.null(log_z)){
+    log_z <- stats::integrate(aux_fun, aux_beta = beta, aux_w = w,
+                              aux_ldens = ldens, ..., aux_shared_args = shared_args,
+                              log_z = log_z, lower = -Inf, upper = Inf)$value |>
+      log()
+  }
+
+  return(aux_fun(x, ..., log_z = log_z) - log_z)
 
 }
 

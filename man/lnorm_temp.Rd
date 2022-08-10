@@ -16,17 +16,17 @@ rnorm_temp(n, beta = 1, mean = 0, sd = 1)
 lnorm(x, mean = 0, sd = 1)
 }
 \arguments{
-\item{x}{vector of quantiles.}
+\item{x}{Vector of quantiles.}
 
-\item{beta}{inverse temperature parameter \eqn{\beta > 0}.}
+\item{beta}{Inverse temperature parameter \eqn{\beta > 0}.}
 
-\item{mean}{vector of means.}
+\item{mean}{Vector of means.}
 
-\item{sd}{vector of standard deviations.}
+\item{sd}{Vector of standard deviations.}
 
 \item{log}{For \code{dnorm_temp}, whether to return the log-density or not (the default).}
 
-\item{n}{number of observations.}
+\item{n}{Number of observations.}
 }
 \value{
 The preffix \code{l} stands for log-density, \code{d} for density, and \code{r} for sampling.

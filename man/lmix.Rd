@@ -27,6 +27,8 @@ by all mixture components (see Component Parameters).}
 
 \item{log}{For \code{dmix}, whether to return the log-density or not (the default).}
 
+\item{n}{Number of observations.}
+
 \item{rdist}{For \code{rmix}, sampler function of the desired parametric distribution, whose first
 argument must be named \code{n} and refer to a number of samples asked from it.}
 
@@ -101,6 +103,6 @@ rmix(n=3, w = c(0.2, 0.8), rdist = rmvtnorm,
 }
 
 \seealso{
-\link{lmix_norm}, \link{lmix_mvtnorm}, \link{lmix_skewnorm} for some specific mixtures or \link{lmix_temp}
-and \link{ulmix_temp} for tempered versions.
+\link{lmix_norm}, \link{lmix_mvtnorm}, \link{lmix_skewnorm} for some specific mixtures.
+For some tempered mixtures see \link{ulmix_norm_temp} or \link{ulmix_temp} in general.
 }
