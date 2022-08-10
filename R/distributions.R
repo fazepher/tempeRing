@@ -378,7 +378,8 @@ rmvtnorm <- function(n, mu = 0, sigma = NULL, LChol_sigma = NULL){
 #'
 lmix <- function(x, w, ldens, ..., shared_args = NULL){
 
-  lk <- mapply(function(w, ...) log(w) + ldens(x, ...), w, ..., MoreArgs = shared_args)
+  lk <- mapply(function(w, ...) log(w) + ldens(x, ...),
+               w, ..., MoreArgs = shared_args)
 
   if(is.null(dim(lk))){
     return(logSumExp(lk))
@@ -676,3 +677,21 @@ lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, log_z = NU
 
 }
 
+#### Tawn et al's Skew Normal ####
+
+lskewnorm <- function(x, m, s, a){
+  log(2) - log(s) + lnorm(x, m, s) + pnorm(x, m, s/a, log.p = TRUE)
+}
+
+lhatskewnorm <- function(x, mu, sigma, alpha){
+  sum(lskewnorm(x, mu, sigma, alpha))
+}
+
+lmix_hatskewnorm <- function(x, w = rep(0.25, 4), ..., shared_args = list(sigma = 1, alpha = 2)){
+ lmix(x, w, lhatskewnorm, ..., shared_args = shared_args)
+}
+
+ulmix_hatskewnorm_temp <- function(x, beta = 1, w = rep(0.25, 4), ...,
+                                   shared_args = list(sigma = 1, alpha = 2)){
+  beta*lmix_hatskewnorm(x, w, ..., shared_args = shared_args)
+}
