@@ -8,7 +8,7 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
 
   # Define the dimension and sampler scale
   stopifnot(is.numeric(scale))
-  d <- `%||%`(d,ifelse(is.matrix(scale), nrow(scale), length(scale)))
+  d <- d %||% ifelse(is.matrix(scale), nrow(scale), length(scale))
   if(d > 1 && !is.matrix(scale)){
     if(!silent){
       warning("Transforming scale parameter to diagonal matrix")
@@ -24,7 +24,7 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
   sampler <- custom_rw_sampler %||%
     ifelse(d == 1,
            function(x, scale){ rnorm(n = 1, mean = x, sd = scale) },
-           function(x, scale){ mvtnorm::rmvnorm(n = 1, mean = x, sigma = scale) })
+           function(x, scale){ rmtvnorm(n = 1, mu = x, sigma = scale) })
 
   # Possibly set seed
   if(!is.null(seed)){
