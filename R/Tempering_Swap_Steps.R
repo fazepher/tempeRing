@@ -43,8 +43,10 @@ naive_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K 
 
   K <- K %||% length(k_curr)
   stopifnot(K >= 2)
+
   d <- d %||% ncol(x_curr)
   acc <- rep(NA, K)
+  x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
   l_next <- l_curr
@@ -77,7 +79,7 @@ naive_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K 
     l_next[m] <- nswap$l_next
   }
 
-  return(mget(c("acc","k_next","beta_next","l_next")))
+  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
 
 }
 
@@ -96,6 +98,7 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
     even_indices <- even_indices[-K/2]
   }
   acc <- logical(K)
+  x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
   l_next <- l_curr
@@ -132,7 +135,7 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
     }
   }
 
-  return(mget(c("acc","k_next","beta_next","l_next")))
+  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
 
 }
 
@@ -151,6 +154,7 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
     even_indices <- even_indices[-K/2]
   }
   acc <- logical(K)
+  x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
   l_next <- l_curr
@@ -187,7 +191,7 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
     }
   }
 
-  return(mget(c("acc","k_next","beta_next","l_next")))
+  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
 
 }
 
