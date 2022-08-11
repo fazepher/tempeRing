@@ -24,7 +24,7 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
   sampler <- custom_rw_sampler %||%
     ifelse(d == 1,
            function(x, scale){ rnorm(n = 1, mean = x, sd = scale) },
-           function(x, scale){ rmtvnorm(n = 1, mu = x, sigma = scale) })
+           function(x, scale){ rmvtnorm(n = 1, mu = x, sigma = scale) })
 
   # Possibly set seed
   if(!is.null(seed)){
