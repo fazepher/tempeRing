@@ -1,13 +1,15 @@
 
 PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
-                         scale = 1, Temp_Moves = 1000, Within_Moves = 10,
-                         x_0 = NULL, x_0_u = NULL, seed = NULL,
+                         scale = 1, Temp_Moves = 1000, Within_Moves = 10, burn_cycles = 0,
+                         x_0 = NULL, x_0_u = 2, k_0 = NULL, l_0 = NULL, seed = NULL,
                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                          silent = FALSE){
 
+#--- Preparation -------------
 
-  stopifnot(swap_type %in% c("deo","seo","naive"))
+  # General PT parameters
   K <- length(beta_schedule)
+  stopifnot(swap_type %in% c("deo","seo","naive"))
   if(swap_type != "naive"){
     odd_indices <- seq(1, K, by = 2)
     even_indices <- seq(2, K, by = 2)
