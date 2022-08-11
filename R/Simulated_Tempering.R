@@ -26,7 +26,7 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
   }
   d <- d %||% ifelse(is.matrix(scale_list[[1]]), nrow(scale_list[[1]]), length(scale_list[[1]]))
   if(d > 1 && !is.matrix(scale_list[[1]])){
-    scale_list <- lapply(scale_list, diag)
+    scale_list <- lapply(scale_list, function(scale) diag(scale, d))
     if(!silent){
       warning("Transforming scale parameter to diagonal matrix")
     }

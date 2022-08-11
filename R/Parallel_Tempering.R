@@ -13,19 +13,19 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
     even_indices <- seq(2, K, by = 2)
   }
 
-  # Dimension and Scale
+  # Dimension and Scales
   if(is.list(scale)){
     if(length(scale) != K){
-      stop("When scale is a list, it must have the same number of elements as beta_schedule")
+      stop("As a list, length of scale must must match that of beta_schedule")
     }
     scale_list <- scale
   }else{
     stopifnot(is.numeric(scale))
-    scale_list <- rep(list(scale), K)
+    scale_list <- lapply(beta_schedule, function(beta) scale/sqrt(beta))
   }
   d <- d %||% ifelse(is.matrix(scale_list[[1]]), nrow(scale_list[[1]]), length(scale_list[[1]]))
   if(d > 1 && !is.matrix(scale_list[[1]])){
-    scale_list <- lapply(scale_list, diag) #Esto es un bug probablemente
+    scale_list <- lapply(scale_list, function(scale) diag(scale, d))
     if(!silent){
       warning("Transforming scale parameter to diagonal matrix")
     }
