@@ -7,7 +7,7 @@ st_temp_step <- function(k_curr, x_curr, l_curr, l_target, ...,
 
   move_right <- runif(1) <= 0.5
 
-  if( (k_curr == 1 && move_left) || (k_curr == K && move_right)){
+  if( (k_curr == 1 && !move_right) || (k_curr == K && move_right)){
     acc <- FALSE
   }else{
     k_prop <- ifelse(move_right, k_curr + 1, k_curr - 1)

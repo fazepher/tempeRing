@@ -1,23 +1,28 @@
 
 ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
-                         scale = 1, Temp_Moves = 1000, Within_Moves = 10,
-                         x_0 = NULL, x_0_u = NULL, k_0 = NULL, seed = NULL,
+                         scale = 1, Temp_Moves = 1000, Within_Moves = 10, burn_cycles = 0,
+                         x_0 = NULL, x_0_u = 2, k_0 = NULL, l_0 = NULL, seed = NULL,
                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                          silent = FALSE){
 
-  ## Preparation
+#--- Preparation -------------
 
+  # General ST parameters
   K <- length(beta_schedule)
   g_schedule <- g_schedule %||% rep(0, K)
-  # Dimension and Scale
+  if(length(g_schedule) != K){
+    stop("Length of g_schedule must match that of beta_schedule")
+  }
+
+  # Dimension and Scales
   if(is.list(scale)){
     if(length(scale) != K){
-      stop("When scale is a list, it must have the same number of elements as beta_schedule")
+      stop("As a list, length of scale must must match that of beta_schedule")
     }
     scale_list <- scale
   }else{
     stopifnot(is.numeric(scale))
-    scale_list <- rep(list(scale), K)
+    scale_list <- lapply(beta_schedule, function(beta) scale/sqrt(beta))
   }
   d <- d %||% ifelse(is.matrix(scale_list[[1]]), nrow(scale_list[[1]]), length(scale_list[[1]]))
   if(d > 1 && !is.matrix(scale_list[[1]])){
@@ -27,86 +32,117 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
     }
   }
 
+  # Checking for valid sample sizes
+  stopifnot(Temp_Moves >= 1)
+  stopifnot(Within_Moves >= 1)
+  stopifnot(0 <= burn_cycles && burn_cycles < Temp_Moves)
+
   # If the user didn't we define proposal sampler(s) as indep. normals
-  if(is.null(custom_rw_sampler)){
-    sampler <- ifelse(d == 1,
-                      function(x, scale){ stats::rnorm(n = 1, mean = x, sd = scale) },
-                      function(x, scale){ mvtnorm::rmvnorm(n = 1, mean = x, sigma = scale) })
-    sampler_list <- rep(list(sampler), K)
+  if(is.list(custom_rw_sampler)){
+    if(length(custom_rw_sampler) != K){
+      stop("As a list, custom_rw_sampler must have the same length as beta_schedule")
+    }
+    sampler_list <- custom_rw_sampler
   }else{
-    sampler_list <- ifelse(is.list(custom_rw_sampler),
-                           custom_rw_sampler,
-                           rep(list(custom_rw_sampler),K))
+    sampler <- custom_rw_sampler %||%
+      ifelse(d == 1,
+             function(x, scale){ rnorm(n = 1, mean = x, sd = scale) },
+             function(x, scale){ rmvtnorm(n = 1, mu = x, sigma = scale) })
+    sampler_list <- rep(list(sampler),K)
   }
 
-  # Starting point
+  # Possibly set seed
   if(!is.null(seed)){
     set.seed(seed)
   }
+
+  # Get starting point
   if(is.null(x_0)){
-    x_0_u <- x_0_u %||% 2
     stopifnot(is.numeric(x_0_u) && x_0_u > 0)
-    x_0 <- stats::runif(d, min = -x_0_u, max = x_0_u)
+    x_0 <- runif(d, min = -x_0_u, max = x_0_u)
   }else{
     stopifnot(is.numeric(x_0) && length(x_0) == d)
   }
-  k_0 <- k_0 %||% sample(1:K, 1)
-  log_lik_0 <- l_target(x_0, beta_schedule[k_0], ...)
+  if(is.null(k_0) && !is.null(l_0)){
+    stop("When l_0 is provided, k_0 must also be present")
+  }
+
 
   # Preallocate containers
-  stopifnot(Temp_Moves > 1)
-  stopifnot(Within_Moves >= 1)
-  S_Tot <- Temp_Moves*(Within_Moves + 1)
-  x <- matrix(nrow = S_Tot, ncol = d, dimnames = list(NULL, target_names))
-  acc <- logical(S_Tot)
-  log_lik <- numeric(S_Tot)
-  k <- numeric(Temp_Moves)
+  cycle_length <- Within_Moves + 1
+  S_Tot <- Temp_Moves*(cycle_length)
+  k <- numeric(Temp_Moves + 1)
+  x <- matrix(nrow = S_Tot + 1, ncol = d, dimnames = list(NULL, target_names))
+  l <- numeric(S_Tot + 1)
+  swap_acc <- logical(Temp_Moves)
+  rwm_acc <- matrix(nrow = Temp_Moves, ncol = Within_Moves)
 
+#--- Algorithm -------------
 
-  ## Algorithm
-
-  # First cycle of a Temp_Swap + Within_Moves
+  # Initialize
+  k[1] <- k_0 %||% sample(1:K, 1)
   x[1, ] <- x_0
-  temp_move <- st_temp_step(k_0, x_0, log_lik_0, l_target, ...,
-                            beta_schedule = beta_schedule, g_schedule = g_schedule, K = K)
-  log_lik[1] <- temp_move$l_next
-  acc[1] <- temp_move$acc
-  k[1] <- temp_move$k_next
-  kth_sampler <- sampler_list[[ k[1] ]]
-  kth_scale <- scale_list[[ k[1] ]]
+  l[1] <- l_0 %||% l_target(x_0, beta_schedule[k[1]], ...)
 
-  rwm_moves <- rwm_sampler_chain(l_target = l_target, beta = beta_schedule[k[1]], ...,
-                                 scale = kth_scale, S = Within_Moves,
-                                 x_0 = x[1, ], log_lik_0 = log_lik[1],
-                                 custom_rw_sampler = kth_sampler)
-  window_wm <- 1 + 1:Within_Moves
-  x[window_wm, ] <- rwm_moves$x
-  log_lik[window_wm] <- rwm_moves$log_lik
-  acc[window_wm] <- rwm_moves$acc
+  # Run iterations
+  for(c in 1:Temp_Moves){
 
-  for(c in 2:Temp_Moves){
+    # Cycle index
+    i <- (c-1)*(cycle_length) + 2
 
-    s <- c + (c-1)*Within_Moves
-    x[s, ] <- x[s-1,]
-    temp_move <- st_temp_step(k[c-1], x[s, ], log_lik[s], l_target, ...,
+    # Temperature Swap
+    temp_move <- st_temp_step(k_curr = k[c],
+                              x_curr = x[i-1, ],
+                              l_curr = l[i-1],
+                              l_target = l_target, ...,
                               beta_schedule = beta_schedule, g_schedule = g_schedule, K = K)
-    log_lik[s] <- temp_move$l_next
-    acc[s] <- temp_move$acc
-    k[c] <- temp_move$k_next
-    kth_sampler <- sampler_list[[ k[c] ]]
-    kth_scale <- scale_list[[ k[c] ]]
+    swap_acc[c] <- temp_move$acc
+    k[c + 1] <- temp_move$k_next
+    x[i, ] <- x[i-1, ] # We always remain at the same X state in ST
+    l[i] <- temp_move$l_next
 
-    rwm_moves <- rwm_sampler_chain(l_target = l_target, beta = beta_schedule[k[c]], ...,
-                                   scale = kth_scale, S = Within_Moves,
-                                   x_0 = x[s, ], log_lik_0 = log_lik[s],
-                                   custom_rw_sampler = kth_sampler)
-    window_wm <- s + 1:(Within_Moves)
-    x[window_wm, ] <- rwm_moves$x
-    log_lik[window_wm] <- rwm_moves$log_lik
-    acc[window_wm] <- rwm_moves$acc
+    # Within temperature moves
+    rwm_moves <- rwm_sampler_chain(x_0 = x[i, ],
+                                   l_0 = l[i],
+                                   beta = beta_schedule[ temp_move$k_next ],
+                                   custom_rw_sampler = sampler_list[[ temp_move$k_next ]],
+                                   scale = scale_list[[ temp_move$k_next ]],
+                                   l_target = l_target, ...,
+                                   S = Within_Moves, burn = 0, silent = TRUE)
+    rwm_acc[c, ] <- rwm_moves$acc
+    x[i + 1:Within_Moves, ] <- rwm_moves$x
+    l[i + 1:Within_Moves] <- rwm_moves$l
 
   }
 
-  return(mget(c("x","k","acc","log_lik")))
+#--- Post processing and result -------------
+
+  swap_acc_rates <- vapply(1:K, function(level) swap_acc[which(k[1:Temp_Moves] == level)] |> mean(),
+                           numeric(1))
+  rwm_acc_rates <- vapply(1:K, function(level) rwm_acc[which(k[-1] == level), ] |> mean(),
+                          numeric(1))
+
+  if(!silent){
+    cat("Finished Sampling", sep = "\n")
+    cat(paste("Swap Acceptance Rates:", round(swap_acc_rates,3)), sep = "\n")
+    cat(paste("RWM Acceptance Rates:", round(rwm_acc_rates,3)), sep = "\n")
+  }
+
+  x_r <- x[-seq(1,burn_cycles*cycle_length + 1), ]
+  l_r <- l[-seq(1,burn_cycles*cycle_length + 1)]
+
+  if(burn_cycles == 0){
+    rwm_acc_r <- rwm_acc
+    swap_acc_r <- swap_acc
+    k_r <- k[-Temp_Moves]
+  }else{
+    rwm_acc_r <- rwm_acc[-seq(1,burn_cycles), ]
+    swap_acc_r <- swap_acc[-seq(1,burn_cycles)]
+    k_r <- k[-seq(1,1+burn_cycles)]
+  }
+
+  return(list(x = x_r, k = k_r, l = l_r,
+              swap_acc = swap_acc_r, swap_acc_rates = swap_acc_rates,
+              rwm_acc = rwm_acc_r, rwm_acc_rates = rwm_acc_rates))
 
 }
