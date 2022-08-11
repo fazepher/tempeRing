@@ -1,6 +1,13 @@
 test_that("RWM works", {
 
 
+  expect_true({
+    true_mean <-  runif(1, min = -5, max = 5)
+    samples <- rwm_sampler_chain(lnorm, mean = true_mean, sd = 3, scale = 15,
+                      S = 750, burn = 50, silent = TRUE)$x
+    abs(mean(samples) - true_mean) <= qnorm(0.995)*posterior::mcse_mean(samples)
+    })
+
   skip_on_cran()
 
   test_scales <- c(0.005, seq(0.01, 0.1, by = 0.01),
