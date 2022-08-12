@@ -134,7 +134,7 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
   if(burn_cycles == 0){
     rwm_acc_r <- rwm_acc
     swap_acc_r <- swap_acc
-    k_r <- k[-Temp_Moves]
+    k_r <- k[-1]
   }else{
     rwm_acc_r <- rwm_acc[-seq(1,burn_cycles), ]
     swap_acc_r <- swap_acc[-seq(1,burn_cycles)]
