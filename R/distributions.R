@@ -371,7 +371,7 @@ rmvtnorm <- function(n, mu = 0, sigma = NULL, LChol_sigma = NULL){
 #' @param shared_args List of other arguments passed on to `ldens` who are shared
 #' by all mixture components (see Component Parameters).
 #'
-#' @seealso [lmix_norm], [lmix_mvtnorm], [lmix_skewnorm] for some specific mixtures.
+#' @seealso [lmix_norm], [lmix_mvtnorm] for some specific mixtures.
 #' For some tempered mixtures see [ulmix_norm_temp] or [ulmix_temp] in general.
 #'
 #' @export
@@ -583,10 +583,9 @@ ul_temp <- function(x, beta = 1, ldens, ...){
 }
 l_temp <- function(x, beta = 1, ldens, ..., z = NULL){
 
-  aux_fun <- function(y, aux_beta = beta, aux_ldens = ldens, ...,
-                      aux_dens_is_log = dens_is_log, lz = lz){
+  aux_fun <- function(y, aux_beta = beta, aux_ldens = ldens, ..., lz = lz){
 
-    ul <- ul_temp(y, aux_beta, aux_ldens, ..., dens_is_log = aux_dens_is_log)
+    ul <- ul_temp(y, aux_beta, aux_ldens, ...)
 
     if(is.null(z)) return(exp(ul)) else return(ul)
 
@@ -680,7 +679,7 @@ lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, log_z = NU
 #### Tawn et al's Skew Normal ####
 
 lskewnorm <- function(x, m, s, a){
-  log(2) - log(s) + lnorm(x, m, s) + pnorm(x, m, s/a, log.p = TRUE)
+  log(2) - log(s) + lnorm(x, m, s) + stats::pnorm(x, m, s/a, log.p = TRUE)
 }
 
 lhatskewnorm <- function(x, mu, sigma, alpha){

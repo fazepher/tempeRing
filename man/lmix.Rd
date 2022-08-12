@@ -103,6 +103,6 @@ rmix(n=3, w = c(0.2, 0.8), rdist = rmvtnorm,
 }
 
 \seealso{
-\link{lmix_norm}, \link{lmix_mvtnorm}, \link{lmix_skewnorm} for some specific mixtures.
+\link{lmix_norm}, \link{lmix_mvtnorm} for some specific mixtures.
 For some tempered mixtures see \link{ulmix_norm_temp} or \link{ulmix_temp} in general.
 }
