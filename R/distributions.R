@@ -686,11 +686,11 @@ lhatskewnorm <- function(x, mu, sigma, alpha){
   sum(lskewnorm(x, mu, sigma, alpha))
 }
 
-lmix_hatskewnorm <- function(x, w = rep(0.25, 4), ..., shared_args = list(sigma = 1, alpha = 2)){
+lmix_hatskewnorm <- function(x, w = rep(0.25, 4), ..., shared_args = list(alpha = 2)){
  lmix(x, w, lhatskewnorm, ..., shared_args = shared_args)
 }
 
 ulmix_hatskewnorm_temp <- function(x, beta = 1, w = rep(0.25, 4), ...,
-                                   shared_args = list(sigma = 1, alpha = 2)){
+                                   shared_args = list(alpha = 2)){
   beta*lmix_hatskewnorm(x, w, ..., shared_args = shared_args)
 }
