@@ -28,8 +28,8 @@ st_temp_step <- function(k_curr, x_curr, l_curr, l_target, ...,
 
 attempt_swap <- function(x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
 
-  swaped_l <- c(l_target(x_1, beta = beta_2, ...),
-                l_target(x_2, beta = beta_1, ...))
+  swaped_l <- c(do.call(l_target,c(list(x = x_1, beta = beta_2), ...)),
+                do.call(l_target,c(list(x = x_2, beta = beta_1), ...)))
   delta_l <- sum(swaped_l) - (l_1 + l_2)
 
   if(delta_l > 0 || log(runif(1)) <= delta_l){

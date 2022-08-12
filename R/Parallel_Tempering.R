@@ -1,7 +1,7 @@
 
 PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
                          scale = 1, Temp_Moves = 1000, Within_Moves = 10, burn_cycles = 0,
-                         x_0 = NULL, x_0_u = 2, k_0 = NULL, l_0 = NULL, seed = NULL,
+                         x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                          silent = FALSE){
 
@@ -33,107 +33,130 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
     }
   }
 
+  # Checking for valid sample sizes
+  stopifnot(Temp_Moves >= 1)
+  stopifnot(Within_Moves >= 1)
+  stopifnot(0 <= burn_cycles && burn_cycles < Temp_Moves)
+
   # If the user didn't we define proposal sampler(s) as indep. normals
-  if(is.null(custom_rw_sampler)){
-    sampler <- ifelse(d == 1,
-                      function(x, scale){ stats::rnorm(n = 1, mean = x, sd = scale) },
-                      function(x, scale){ mvtnorm::rmvnorm(n = 1, mean = x, sigma = scale) })
-    sampler_list <- rep(list(sampler), K)
+  if(is.list(custom_rw_sampler)){
+    if(length(custom_rw_sampler) != K){
+      stop("As a list, custom_rw_sampler must have the same length as beta_schedule")
+    }
+    sampler_list <- custom_rw_sampler
   }else{
-    sampler_list <- ifelse(is.list(custom_rw_sampler),
-                           custom_rw_sampler,
-                           rep(list(custom_rw_sampler),K))
+    sampler <- custom_rw_sampler %||%
+      ifelse(d == 1,
+             function(x, scale){ rnorm(n = 1, mean = x, sd = scale) },
+             function(x, scale){ rmvtnorm(n = 1, mu = x, sigma = scale) })
+    sampler_list <- rep(list(sampler),K)
   }
 
-  # Starting point
+  # Possibly set seed
   if(!is.null(seed)){
     set.seed(seed)
   }
+
+  # Get starting point
   if(is.null(x_0)){
-    x_0_u <- x_0_u %||% 2
     stopifnot(is.numeric(x_0_u) && x_0_u > 0)
-    x_0 <- matrix(data = stats::runif(d*K, min = -x_0_u, max = x_0_u), nrow = K, ncol = d)
+    x_0 <- matrix(data = runif(d*K, min = -x_0_u, max = x_0_u), nrow = K, ncol = d)
   }else{
     stopifnot(is.numeric(x_0))
     stopifnot(nrow(x_0) == K && ncol(x_0) == d)
   }
-  log_lik_0 <- mapply(function(x,beta) l_target(x, beta, ...),
-                      asplit(x_0, 1),  beta_schedule)
-
-  # Preallocate containers
-  stopifnot(Temp_Moves > 1)
-  stopifnot(Within_Moves >= 1)
-  S_Tot <- Temp_Moves*(Within_Moves + 1)
-  x <- array(dim = c(S_Tot, K, d), dimnames = list(NULL,NULL,target_names))
-  acc <- matrix(nrow = S_Tot, ncol = K)
-  log_lik <- matrix(nrow = S_Tot, ncol = K)
-  k_indexes <- matrix(nrow = Temp_Moves, ncol = K)
-  beta_indexes <- matrix(nrow = Temp_Moves, ncol = K)
-
-  ## Algorithm
-  window_wm <- 1 + 1:(Within_Moves)
-  # First Cycle
-  swap_move <- temp_swap_move(type = swap_type, c = 1,
-                              array(x_0, dim = c(1, K, d)),
-                              beta_schedule,
-                              1:K,
-                              log_lik_0,
-                              l_target, ...,
-                              K = K, d = d)
-  x[1, , ] <- x_0
-  log_lik[1, ] <- swap_move$l_next
-  acc[1, ] <- swap_move$acc
-  beta_indexes[1, ] <- swap_move$beta_next
-  k_indexes[1, ] <- swap_move$k_next
-
-  for(k in 1:K){
-    rwm_moves <- rwm_sampler_chain(l_target = l_target,
-                                   beta = beta_indexes[1, k],
-                                   ...,
-                                   scale = scale_list[[ k_indexes[1, k] ]],
-                                   S = Within_Moves,
-                                   x_0 = x[1, k, ],
-                                   log_lik_0 = log_lik[1, k],
-                                   custom_rw_sampler = sampler_list[[ k_indexes[1, k] ]])
-    x[window_wm, k, ] <- rwm_moves$x
-    acc[window_wm, k] <- rwm_moves$acc
-    log_lik[window_wm, k] <- rwm_moves$log_lik
+  target_args <- rlang::dots_list(...)
+  if(is.null(l_0)){
+    # More verbose but attempts to use mapply have failed
+    # (asplit for the matrix rows may also fail because it keeps them as arrays)
+    l_0 <- numeric(K)
+    for(k in seq_along(beta_schedule)){
+      l_0[k] <- do.call(l_target, c(list(x = x_0[k, ], beta = beta_schedule[k]), target_args))
+    }
   }
 
-  # Next Cycles
-  for(c in 2:Temp_Moves){
+  # Preallocate containers
+  cycle_length <- Within_Moves + 1
+  S_Tot <- Temp_Moves*(cycle_length)
+  k_indexes <- matrix(nrow = Temp_Moves + 1, ncol = K)
+  beta_indexes <- matrix(nrow = Temp_Moves + 1, ncol = K)
+  x <- array(dim = c(S_Tot + 1, K, d), dimnames = list(NULL, NULL, target_names))
+  l <- matrix(nrow = S_Tot + 1, ncol = K)
+  swap_acc <- matrix(nrow = Temp_Moves, ncol = K)
+  rwm_acc <- array(dim = c(Temp_Moves, Within_Moves, K))
 
-    s <- c + (c-1)*Within_Moves
-    window_wm <- s + 1:(Within_Moves)
+#--- Algorithm -------------
+
+  # Initialize
+  k_indexes[1, ] <- 1:K
+  beta_indexes[1, ] <- beta_schedule
+  x[1, , ] <- x_0
+  l[1, ] <- l_0
+
+  # Run iterations
+  for(c in 1:Temp_Moves){
+
+    # Cycle index
+    i <- (c-1)*(cycle_length) + 2
+
+    # Temperature Swap
     swap_move <- temp_swap_move(type = swap_type, c = c,
-                                x[s-1, , , drop = FALSE],
-                                beta_indexes[c-1, ],
-                                k_indexes[c-1, ],
-                                log_lik[s-1, ],
-                                l_target, ...,
+                                beta_curr = beta_indexes[c, ],
+                                k_curr = k_indexes[c, ],
+                                x_curr = x[i-1, , , drop = FALSE],
+                                l_curr = l[i-1, ],
+                                l_target, target_args,
                                 K = K, d = d)
-    x[s, , ] <- x[s-1, , , drop = FALSE]
-    log_lik[s, ] <- swap_move$l_next
-    acc[s, ] <- swap_move$acc
-    beta_indexes[c, ] <- swap_move$beta_next
-    k_indexes[c, ] <- swap_move$k_next
+    swap_acc[c, ] <- swap_move$acc
+    k_indexes[c+1, ] <- swap_move$k_next
+    beta_indexes[c+1, ] <- swap_move$beta_next
+    x[i, , ] <- swap_move$x_next
+    l[i, ] <- swap_move$l_next
 
+    # Within temperature moves
     for(k in 1:K){
-      rwm_moves <- rwm_sampler_chain(l_target = l_target,
-                                     beta = beta_indexes[c, k],
-                                     ...,
-                                     scale = scale_list[[ k_indexes[c, k] ]],
-                                     S = Within_Moves,
-                                     x_0 = x[s, k, ],
-                                     log_lik_0 = log_lik[s, k],
-                                     custom_rw_sampler = sampler_list[[ k_indexes[c, k] ]])
-      x[window_wm, k, ] <- rwm_moves$x
-      acc[window_wm, k] <- rwm_moves$acc
-      log_lik[window_wm, k] <- rwm_moves$log_lik
+      temperature_arguments <- c(list(x_0 = x[i, k, ], l_0 = l[i, k],
+                                      beta = swap_move$beta_next[k],
+                                      custom_rw_sampler = sampler_list[[ swap_move$k_next[k] ]],
+                                      scale = scale_list[[ swap_move$k_next[k] ]],
+                                      S = Within_Moves, burn = 0, silent = TRUE),
+                                 l_target = l_target, target_args)
+      rwm_moves <- do.call(rwm_sampler_chain, temperature_arguments)
+      rwm_acc[c, , k] <- rwm_moves$acc
+      x[i + 1:Within_Moves, k, ] <- rwm_moves$x
+      l[i + 1:Within_Moves, k] <- rwm_moves$l
     }
 
   }
 
-  return(mget(c("x","acc","log_lik","k_indexes","beta_indexes")))
+#--- Post processing and result -------------
+
+  swap_acc_rates <- colMeans(swap_acc, na.rm = TRUE)
+  rwm_acc_rates <- colMeans(rwm_acc, na.rm = TRUE, dims = 2)
+
+  if(!silent){
+    cat("Finished Sampling", sep = "\n")
+    cat(paste("Swap Acceptance Rates:", round(swap_acc_rates,3)), sep = "\n")
+    cat(paste("RWM Acceptance Rates:", round(rwm_acc_rates,3)), sep = "\n")
+  }
+
+  x_r <- x[-seq(1,burn_cycles*cycle_length + 1), , , drop = FALSE]
+  l_r <- l[-seq(1,burn_cycles*cycle_length + 1), ]
+
+  if(burn_cycles == 0){
+    rwm_acc_r <- rwm_acc
+    swap_acc_r <- swap_acc
+    b_r <- beta_indexes[-1, ]
+    k_r <- k_indexes[-1, ]
+  }else{
+    rwm_acc_r <- rwm_acc[-seq(1,burn_cycles), , ]
+    swap_acc_r <- swap_acc[-seq(1,burn_cycles), ]
+    b_r <- beta_indexes[-seq(1,1+burn_cycles), ]
+    k_r <- k_indexes[-seq(1,1+burn_cycles), ]
+  }
+
+  return(list(x = x_r, l = l_r, k_indexes = k_r, beta_indexes = b_r,
+              swap_acc = swap_acc_r, swap_acc_rates = swap_acc_rates,
+              rwm_acc = rwm_acc_r, rwm_acc_rates = rwm_acc_rates))
 
 }

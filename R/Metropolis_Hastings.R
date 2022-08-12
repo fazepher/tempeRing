@@ -193,7 +193,7 @@ mh_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sampler_arg
                              lq_sampler = NULL, lq_sampler_args = NULL, do_checks = TRUE){
 
   x_prop <- do.call(sampler, c(list(x_curr), sampler_args))
-  l_prop <- l_target(x_prop, ...)
+  l_prop <- do.call(l_target, c(list(x_prop), rlang::dots_list(...)))
 
   if(is.function(lq_sampler)){
     lq_c2p <- do.call(lq_sampler, c(list(x_curr, x_prop), lq_sampler_args))
