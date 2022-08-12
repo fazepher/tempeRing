@@ -183,11 +183,12 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                             l_target, ...)
     }
     m <- c(m_1, m_2)
+    b <- c(b_2[i], b_1[i])
+    beta_next[m] <- nswap$beta_next
+    l_next[m] <- nswap$l_next
     if(nswap$acc){
-      acc[m] <- TRUE
-      k_next[m] <- c(b_2[i], b_1[i])
-      beta_next[m] <- nswap$beta_next
-      l_next[m] <- nswap$l_next
+      k_next[m] <- b
+      acc[b] <- TRUE
     }
   }
 

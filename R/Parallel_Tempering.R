@@ -23,7 +23,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
     scale_list <- scale
   }else{
     stopifnot(is.numeric(scale))
-    scale_list <- lapply(beta_schedule, function(beta) scale/sqrt(beta))
+    scale_list <- lapply(beta_schedule, function(beta) scale/beta)
   }
   d <- d %||% ifelse(is.matrix(scale_list[[1]]), nrow(scale_list[[1]]), length(scale_list[[1]]))
   if(d > 1 && !is.matrix(scale_list[[1]])){
@@ -71,7 +71,8 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
     # (asplit for the matrix rows may also fail because it keeps them as arrays)
     l_0 <- numeric(K)
     for(k in seq_along(beta_schedule)){
-      l_0[k] <- do.call(l_target, c(list(x = x_0[k, ], beta = beta_schedule[k]), target_args))
+      temporal <- do.call(l_target, c(list(x = x_0[k, ], beta = beta_schedule[k]), target_args))
+      l_0[k] <- temporal
     }
   }
 
@@ -115,14 +116,15 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
     # Within temperature moves
     for(k in 1:K){
-      temperature_arguments <- c(list(x_0 = x[i, k, ], l_0 = l[i, k],
-                                      beta = swap_move$beta_next[k],
+      temperature_arguments <- c(list(x_0 = x[i, k , ],
+                                      l_0 = l[i, k],
+                                      beta = beta_indexes[c+1, k],
                                       custom_rw_sampler = sampler_list[[ swap_move$k_next[k] ]],
                                       scale = scale_list[[ swap_move$k_next[k] ]],
                                       S = Within_Moves, burn = 0, silent = TRUE),
                                  l_target = l_target, target_args)
       rwm_moves <- do.call(rwm_sampler_chain, temperature_arguments)
-      rwm_acc[c, , k] <- rwm_moves$acc
+      rwm_acc[c, , swap_move$k_next[k]] <- rwm_moves$acc
       x[i + 1:Within_Moves, k, ] <- rwm_moves$x
       l[i + 1:Within_Moves, k] <- rwm_moves$l
     }
