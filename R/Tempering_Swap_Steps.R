@@ -42,41 +42,42 @@ attempt_swap <- function(x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
 naive_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K = NULL, d = NULL){
 
   K <- K %||% length(k_curr)
-  stopifnot(K >= 2)
-
+  stopifnot(K >= 3)
   d <- d %||% ncol(x_curr)
-  acc <- rep(NA, K)
+
+  acc <- logical(K)
   x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
   l_next <- l_curr
 
-  # We select a single random pair of betas to attempt a swap
-  b_1 <- sample(1:(K-1), 1)
+  # Choose with replacement which indexes we attempt to swap
+  b_1 <- sample.int(K-1, K %/% 2, replace = TRUE)
   b_2 <- b_1 + 1
-  # We get which "machines" have those beta indexes
-  m_1 <- which(k_curr == b_1)
-  m_2 <- which(k_curr == b_2)
 
-  if(d == 1){
-    nswap <- attempt_swap(x_curr[m_1], x_curr[m_2],
-                          beta_curr[m_1], beta_curr[m_2],
-                          l_curr[m_1], l_curr[m_2],
-                          l_target, ...)
-  }else{
-    nswap <- attempt_swap(x_curr[1, m_1, ], x_curr[1, m_2, ],
-                          beta_curr[m_1], beta_curr[m_2],
-                          l_curr[m_1], l_curr[m_2],
-                          l_target, ...)
-  }
-
-
-  m <- c(m_1, m_2)
-  acc[m] <- nswap$acc
-  if(nswap$acc){
-    k_next[m] <- c(b_2, b_1)
+  for(i in seq_along(b_1)){
+    # We get which "machines" have the beta indexes
+    m_1 <- which(k_next == b_1[i])
+    m_2 <- which(k_next == b_2[i])
+    if(d == 1){
+      nswap <- attempt_swap(x_curr[m_1], x_curr[m_2],
+                            beta_curr[m_1], beta_curr[m_2],
+                            l_curr[m_1], l_curr[m_2],
+                            l_target, ...)
+    }else{
+      nswap <- attempt_swap(x_curr[1, m_1, ], x_curr[1, m_2, ],
+                            beta_curr[m_1], beta_curr[m_2],
+                            l_curr[m_1], l_curr[m_2],
+                            l_target, ...)
+    }
+    m <- c(m_1, m_2)
+    b <- c(b_2[i], b_1[i])
     beta_next[m] <- nswap$beta_next
     l_next[m] <- nswap$l_next
+    if(nswap$acc){
+      k_next[m] <- b
+      acc[b] <- TRUE
+    }
   }
 
   return(mget(c("x_next","acc","k_next","beta_next","l_next")))
@@ -113,8 +114,8 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
 
   for(i in seq_along(b_1)){
     # We get which "machines" have the beta indexes
-    m_1 <- which(k_curr == b_1[i])
-    m_2 <- which(k_curr == b_2[i])
+    m_1 <- which(k_next == b_1[i])
+    m_2 <- which(k_next == b_2[i])
     if(d == 1){
       nswap <- attempt_swap(x_curr[m_1], x_curr[m_2],
                             beta_curr[m_1], beta_curr[m_2],
@@ -127,11 +128,12 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                             l_target, ...)
     }
     m <- c(m_1, m_2)
+    b <- c(b_2[i], b_1[i])
+    beta_next[m] <- nswap$beta_next
+    l_next[m] <- nswap$l_next
     if(nswap$acc){
-      acc[m] <- TRUE
-      k_next[m] <- c(b_2[i], b_1[i])
-      beta_next[m] <- nswap$beta_next
-      l_next[m] <- nswap$l_next
+      k_next[m] <- b
+      acc[b] <- TRUE
     }
   }
 
@@ -169,8 +171,8 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
 
   for(i in seq_along(b_1)){
     # We get which "machines" have the beta indexes
-    m_1 <- which(k_curr == b_1[i])
-    m_2 <- which(k_curr == b_2[i])
+    m_1 <- which(k_next == b_1[i])
+    m_2 <- which(k_next == b_2[i])
     if(d == 1){
       nswap <- attempt_swap(x_curr[m_1], x_curr[m_2],
                             beta_curr[m_1], beta_curr[m_2],
