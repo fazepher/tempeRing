@@ -97,6 +97,10 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   # Run iterations
   for(c in 1:Temp_Moves){
 
+    if(c %% floor(Temp_Moves*0.05) == 0){
+      cat(paste0("Avance: ",round(100*c/Temp_Moves),"%"),sep = "\n")
+      print(Sys.time())
+    }
     # Cycle index
     i <- (c-1)*(cycle_length) + 2
 
