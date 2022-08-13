@@ -8,6 +8,8 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 #--- Preparation -------------
 
   # General PT parameters
+  start_time <- Sys.time()
+  global_times <- rep(start_time, 3)
   K <- length(beta_schedule)
   stopifnot(swap_type %in% c("deo","seo","naive"))
   if(swap_type != "naive"){
@@ -85,6 +87,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   l <- matrix(nrow = S_Tot + 1, ncol = K)
   swap_acc <- matrix(nrow = Temp_Moves, ncol = K)
   rwm_acc <- array(dim = c(Temp_Moves, Within_Moves, K))
+  cycle_times <- as.POSIXct(rep(NA, Temp_Moves))
 
 #--- Algorithm -------------
 
@@ -97,7 +100,8 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   # Run iterations
   for(c in 1:Temp_Moves){
 
-    if(c %% floor(Temp_Moves*0.05) == 0){
+    cycle_times[c] <- Sys.time()
+    if(isTRUE(c %% floor(Temp_Moves*0.05) == 0)){
       cat(paste0("Avance: ",round(100*c/Temp_Moves),"%"),sep = "\n")
       print(Sys.time())
     }
@@ -134,6 +138,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
     }
 
   }
+  global_times[2] <- Sys.time()
 
 #--- Post processing and result -------------
 
@@ -161,8 +166,10 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
     k_r <- k_indexes[-seq(1,1+burn_cycles), ]
   }
 
+  global_times[3] <- Sys.time()
   return(list(x = x_r, l = l_r, k_indexes = k_r, beta_indexes = b_r,
               swap_acc = swap_acc_r, swap_acc_rates = swap_acc_rates,
-              rwm_acc = rwm_acc_r, rwm_acc_rates = rwm_acc_rates))
+              rwm_acc = rwm_acc_r, rwm_acc_rates = rwm_acc_rates,
+              cycle_times = cycle_times, global_times = global_times))
 
 }
