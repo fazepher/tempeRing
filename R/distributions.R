@@ -679,7 +679,7 @@ lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, log_z = NU
 #### Tawn et al's Skew Normal ####
 
 lskewnorm <- function(x, m, s, a){
-  log(2) - log(s) + lnorm(x, m, s) + stats::pnorm(x, m, s/a, log.p = TRUE)
+  log(2) - log(s) + lnorm((x-m)/s) + stats::pnorm(a*(x-m)/s, log.p = TRUE)
 }
 
 lhatskewnorm <- function(x, mu, sigma, alpha){
