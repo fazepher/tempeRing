@@ -1,7 +1,11 @@
 
-get_HAT_info <- function(modes, l_target, ..., h = .Machine$double.eps^(1/4)){
+get_HAT_info <- function(mode_guess, l_target, ..., method = "Nelder-Mead", control_optim = list(fnscale = -1)){
 
-  mH <- lapply(modes, function(m) -pracma::hessian(l_target, m, h = h, beta = 1, ...))
+  optimizations <- lapply(mode_guess,
+                          function(m) optim(m, l_target, beta = 1, ..., method = method,
+                                            control = control_optim, hessian = TRUE))
+  modes <- lapply(optimizations,function(o) o$par)
+  mH <- lapply(optimizations, function(o) -o$hessian)
   Cov <- lapply(mH,solve)
   cholCov <- lapply(Cov,chol)
   detCov <- vapply(cholCov, function(chS) prod(diag(chS))^2, numeric(1))
@@ -27,7 +31,7 @@ modAssignment <- function(x, beta, HAT_info){
 
 }
 
-lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1){
+lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent = FALSE){
 
   ## Basic Weight Preservation
 
