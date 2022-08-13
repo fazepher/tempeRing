@@ -3,6 +3,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
                          scale = 1, Temp_Moves = 1000, Within_Moves = 10, burn_cycles = 0,
                          x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
+                         quanta = FALSE, mode_info = NULL,
                          silent = FALSE){
 
 #--- Preparation -------------
@@ -110,12 +111,14 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
     # Temperature Swap
     swap_move <- temp_swap_move(type = swap_type, c = c,
+                                quanta = quanta, mode_info = mode_info, 
                                 beta_curr = beta_indexes[c, ],
                                 k_curr = k_indexes[c, ],
                                 x_curr = x[i-1, , , drop = FALSE],
                                 l_curr = l[i-1, ],
                                 l_target, target_args,
                                 K = K, d = d)
+
     swap_acc[c, ] <- swap_move$acc
     k_indexes[c+1, ] <- swap_move$k_next
     beta_indexes[c+1, ] <- swap_move$beta_next

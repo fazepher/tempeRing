@@ -198,20 +198,35 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
 
 }
 
-temp_swap_move <- function(type = "deo", c = NULL,
+temp_swap_move <- function(type = "deo", c = NULL, quanta = FALSE, mode_info = NULL,
                            x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                            K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
 
-  if(type == "deo"){
+  # Regular PT Swapping
+  if(type == "deo" && !quanta){
     return(deo_swap_move(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                          K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
   }
-  if(type == "seo"){
+  if(type == "seo" && !quanta){
     return(seo_swap_move(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                          K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
   }
-  if(type == "naive"){
+  if(type == "naive" && !quanta){
     return(naive_swap_move(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K = K, d = d))
+  }
+
+  # QuanTA Swapping
+  if(type == "deo"){
+    return(deo_quanta_move(mode_info, c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                           K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
+  }
+  if(type == "seo"){
+    return(seo_quanta_move(mode_info, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                           K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
+  }
+  if(type == "naive"){
+    return(naive_quanta_move(mode_info, x_curr, beta_curr, k_curr, l_curr, l_target, ..., 
+                             K = K, d = d))
   }
 
   stop("Only recognized types of swap are: 'deo', 'seo' and 'naive'.")
