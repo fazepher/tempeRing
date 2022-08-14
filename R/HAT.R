@@ -1,11 +1,16 @@
 
-get_HAT_info <- function(mode_guess, l_target, ..., method = "Nelder-Mead", control_optim = list(fnscale = -1)){
+get_HAT_info <- function(mode_guess, l_target, ...,
+                         optimize = TRUE, method = "Nelder-Mead", control_optim = list(fnscale = -1)){
 
-  optimizations <- lapply(mode_guess,
-                          function(m) optim(m, l_target, beta = 1, ..., method = method,
-                                            control = control_optim, hessian = TRUE))
-  modes <- lapply(optimizations,function(o) o$par)
-  mH <- lapply(optimizations, function(o) -o$hessian)
+  if(optimize){
+    optimizations <- lapply(mode_guess,
+                            function(m) optim(m, l_target, beta = 1, ..., method = method,
+                                              control = control_optim, hessian = TRUE))
+    modes <- lapply(optimizations,function(o) o$par)
+  }else{
+    modes <- mode_guess
+  }
+  mH <- lapply(modes, function(m) -(numDeriv::hessian(l_target, m, ...)))
   Cov <- lapply(mH,solve)
   cholCov <- lapply(Cov,chol)
   detCov <- vapply(cholCov, function(chS) prod(diag(chS))^2, numeric(1))
@@ -23,9 +28,6 @@ modAssignment <- function(x, beta, HAT_info){
   lP_vec <-mapply(function(mu,w,Cov) log(w) + lmvtnorm(x, mu, Cov/beta),
                   mu = HAT_info$modes, w = HAT_info$w, Cov = HAT_info$Cov)
   A <- which.max(lP_vec)
-  if(A > 4){
-    stop("Veamos")
-  }
 
   return(list("A" = A, "lP_j" = lP_vec[A]))
 
