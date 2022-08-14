@@ -3,6 +3,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
                          scale = 1, Temp_Moves = 1000, Within_Moves = 10, burn_cycles = 0,
                          x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
+                         quanta = FALSE, mode_info = NULL,
                          silent = FALSE){
 
 #--- Preparation -------------
@@ -12,10 +13,8 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   global_times <- rep(start_time, 3)
   K <- length(beta_schedule)
   stopifnot(swap_type %in% c("deo","seo","naive"))
-  if(swap_type != "naive"){
-    odd_indices <- seq(1, K, by = 2)
-    even_indices <- seq(2, K, by = 2)
-  }
+  odd_indices <- seq(1, K, by = 2)
+  even_indices <- seq(2, K, by = 2)
 
   # Dimension and Scales
   if(is.list(scale)){
@@ -38,7 +37,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   # Checking for valid sample sizes
   stopifnot(Temp_Moves >= 1)
   stopifnot(Within_Moves >= 1)
-  stopifnot(0 <= burn_cycles && burn_cycles < Temp_Moves)
+  stopifnot(-1 <= burn_cycles && burn_cycles < Temp_Moves)
 
   # If the user didn't we define proposal sampler(s) as indep. normals
   if(is.list(custom_rw_sampler)){
@@ -110,12 +109,17 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
     # Temperature Swap
     swap_move <- temp_swap_move(type = swap_type, c = c,
+                                quanta = quanta, mode_info = mode_info,
+                                x_curr = x[i-1, , , drop = FALSE],
                                 beta_curr = beta_indexes[c, ],
                                 k_curr = k_indexes[c, ],
-                                x_curr = x[i-1, , , drop = FALSE],
                                 l_curr = l[i-1, ],
                                 l_target, target_args,
-                                K = K, d = d)
+                                K = K,
+                                odd_indices = odd_indices,
+                                even_indices = even_indices,
+                                d = d)
+
     swap_acc[c, ] <- swap_move$acc
     k_indexes[c+1, ] <- swap_move$k_next
     beta_indexes[c+1, ] <- swap_move$beta_next
@@ -142,13 +146,21 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
 #--- Post processing and result -------------
 
-  swap_acc_rates <- colMeans(swap_acc, na.rm = TRUE)
+  swap_acc_rates <- apply(swap_acc, 2, function(swaps) mean(swaps[swaps>=0]))
   rwm_acc_rates <- colMeans(rwm_acc, na.rm = TRUE, dims = 2)
 
   if(!silent){
     cat("Finished Sampling", sep = "\n")
     cat(paste("Swap Acceptance Rates:", round(swap_acc_rates,3)), sep = "\n")
     cat(paste("RWM Acceptance Rates:", round(rwm_acc_rates,3)), sep = "\n")
+  }
+
+  if(burn_cycles == -1){
+    global_times[3] <- Sys.time()
+    return(list(x = x, l = l, k_indexes = k_indexes, beta_indexes = beta_indexes,
+                swap_acc = swap_acc, swap_acc_rates = swap_acc_rates,
+                rwm_acc = rwm_acc, rwm_acc_rates = rwm_acc_rates,
+                cycle_times = cycle_times, global_times = global_times))
   }
 
   x_r <- x[-seq(1,burn_cycles*cycle_length + 1), , , drop = FALSE]
