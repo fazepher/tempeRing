@@ -45,7 +45,7 @@ naive_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K 
   stopifnot(K >= 3)
   d <- d %||% ncol(x_curr)
 
-  acc <- logical(K)
+  acc <- rep(-1,K)
   x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
@@ -60,23 +60,23 @@ naive_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K 
     m_1 <- which(k_next == b_1[i])
     m_2 <- which(k_next == b_2[i])
     if(d == 1){
-      nswap <- attempt_swap(x_curr[m_1], x_curr[m_2],
-                            beta_curr[m_1], beta_curr[m_2],
-                            l_curr[m_1], l_curr[m_2],
+      nswap <- attempt_swap(x_next[m_1], x_next[m_2],
+                            beta_next[m_1], beta_next[m_2],
+                            l_next[m_1], l_next[m_2],
                             l_target, ...)
     }else{
-      nswap <- attempt_swap(x_curr[1, m_1, ], x_curr[1, m_2, ],
-                            beta_curr[m_1], beta_curr[m_2],
-                            l_curr[m_1], l_curr[m_2],
+      nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
+                            beta_next[m_1], beta_next[m_2],
+                            l_next[m_1], l_next[m_2],
                             l_target, ...)
     }
     m <- c(m_1, m_2)
     b <- c(b_2[i], b_1[i])
     beta_next[m] <- nswap$beta_next
     l_next[m] <- nswap$l_next
+    acc[b] <- nswap$acc
     if(nswap$acc){
       k_next[m] <- b
-      acc[b] <- TRUE
     }
   }
 
@@ -98,7 +98,7 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
   } else{
     even_indices <- even_indices[-K/2]
   }
-  acc <- logical(K)
+  acc <- rep(-1,K)
   x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
@@ -117,23 +117,23 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
     m_1 <- which(k_next == b_1[i])
     m_2 <- which(k_next == b_2[i])
     if(d == 1){
-      nswap <- attempt_swap(x_curr[m_1], x_curr[m_2],
-                            beta_curr[m_1], beta_curr[m_2],
-                            l_curr[m_1], l_curr[m_2],
+      nswap <- attempt_swap(x_next[m_1], x_next[m_2],
+                            beta_next[m_1], beta_next[m_2],
+                            l_next[m_1], l_next[m_2],
                             l_target, ...)
     }else{
-      nswap <- attempt_swap(x_curr[1, m_1, ], x_curr[1, m_2, ],
-                            beta_curr[m_1], beta_curr[m_2],
-                            l_curr[m_1], l_curr[m_2],
+      nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
+                            beta_next[m_1], beta_next[m_2],
+                            l_next[m_1], l_next[m_2],
                             l_target, ...)
     }
     m <- c(m_1, m_2)
     b <- c(b_2[i], b_1[i])
     beta_next[m] <- nswap$beta_next
     l_next[m] <- nswap$l_next
+    acc[b] <- nswap$acc
     if(nswap$acc){
       k_next[m] <- b
-      acc[b] <- TRUE
     }
   }
 
@@ -155,7 +155,7 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
   } else{
     even_indices <- even_indices[-K/2]
   }
-  acc <- logical(K)
+  acc <- rep(-1,K)
   x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
@@ -174,20 +174,21 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
     m_1 <- which(k_next == b_1[i])
     m_2 <- which(k_next == b_2[i])
     if(d == 1){
-      nswap <- attempt_swap(x_curr[m_1], x_curr[m_2],
-                            beta_curr[m_1], beta_curr[m_2],
-                            l_curr[m_1], l_curr[m_2],
+      nswap <- attempt_swap(x_next[m_1], x_next[m_2],
+                            beta_next[m_1], beta_next[m_2],
+                            l_next[m_1], l_next[m_2],
                             l_target, ...)
     }else{
-      nswap <- attempt_swap(x_curr[1, m_1, ], x_curr[1, m_2, ],
-                            beta_curr[m_1], beta_curr[m_2],
-                            l_curr[m_1], l_curr[m_2],
+      nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
+                            beta_next[m_1], beta_next[m_2],
+                            l_next[m_1], l_next[m_2],
                             l_target, ...)
     }
     m <- c(m_1, m_2)
     b <- c(b_2[i], b_1[i])
     beta_next[m] <- nswap$beta_next
     l_next[m] <- nswap$l_next
+    acc[b] <- nswap$acc
     if(nswap$acc){
       k_next[m] <- b
       acc[b] <- TRUE
@@ -225,7 +226,7 @@ temp_swap_move <- function(type = "deo", c = NULL, quanta = FALSE, mode_info = N
                            K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
   }
   if(type == "naive"){
-    return(naive_quanta_move(mode_info, x_curr, beta_curr, k_curr, l_curr, l_target, ..., 
+    return(naive_quanta_move(mode_info, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                              K = K, d = d))
   }
 
