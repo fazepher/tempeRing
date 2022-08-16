@@ -1,6 +1,6 @@
 
 PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
-                         scale = 1, Temp_Moves = 1000, Within_Moves = 10, burn_cycles = 0,
+                         scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                          x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                          quanta = FALSE, mode_info = NULL,
@@ -12,7 +12,6 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   start_time <- Sys.time()
   global_times <- rep(start_time, 3)
   K <- length(beta_schedule)
-  stopifnot(swap_type %in% c("deo","seo","naive"))
   odd_indices <- seq(1, K, by = 2)
   even_indices <- seq(2, K, by = 2)
 
@@ -35,9 +34,10 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   }
 
   # Checking for valid sample sizes
+  stopifnot(Cycles >= 1)
+  stopifnot(-1 <= burn_cycles && burn_cycles < Cycles)
   stopifnot(Temp_Moves >= 1)
   stopifnot(Within_Moves >= 1)
-  stopifnot(-1 <= burn_cycles && burn_cycles < Temp_Moves)
 
   # If the user didn't we define proposal sampler(s) as indep. normals
   if(is.list(custom_rw_sampler)){
@@ -78,76 +78,92 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   }
 
   # Preallocate containers
-  cycle_length <- Within_Moves + 1
-  S_Tot <- Temp_Moves*(cycle_length)
-  k_indexes <- matrix(nrow = Temp_Moves + 1, ncol = K)
-  beta_indexes <- matrix(nrow = Temp_Moves + 1, ncol = K)
+  cycle_length <- Temp_Moves + Within_Moves
+  S_Tot <- Cycles*(cycle_length)
   x <- array(dim = c(S_Tot + 1, K, d), dimnames = list(NULL, NULL, target_names))
   l <- matrix(nrow = S_Tot + 1, ncol = K)
-  swap_acc <- matrix(nrow = Temp_Moves, ncol = K)
-  rwm_acc <- array(dim = c(Temp_Moves, Within_Moves, K))
-  cycle_times <- as.POSIXct(rep(NA, Temp_Moves))
+  k_indexes <- array(dim = c(Cycles + 1, Temp_Moves + 1, K))
+  beta_indexes <- array(dim = c(Cycles + 1, Temp_Moves + 1, K))
+  swap_acc <- array(-1, dim = c(Cycles, Temp_Moves, K))
+  rwm_acc <- array(dim = c(Cycles, Within_Moves, K))
+  cycle_times <- as.POSIXct(rep(NA, Cycles))
 
 #--- Algorithm -------------
 
   # Initialize
-  k_indexes[1, ] <- 1:K
-  beta_indexes[1, ] <- beta_schedule
+  k_indexes[1, 1, ] <- 1:K
+  beta_indexes[1, 1, ] <- beta_schedule
   x[1, , ] <- x_0
   l[1, ] <- l_0
 
   # Run iterations
-  for(c in 1:Temp_Moves){
+  for(c in 1:Cycles){
 
     cycle_times[c] <- Sys.time()
-    if(isTRUE(c %% floor(Temp_Moves*0.05) == 0)){
-      cat(paste0("Avance: ",round(100*c/Temp_Moves),"%"),sep = "\n")
+    if(isTRUE(c %% floor(Cycles*0.05) == 0)){
+      cat(paste0("Avance: ",round(100*c/Cycles),"%"),sep = "\n")
       print(Sys.time())
     }
-    # Cycle index
+
+    # Current cycle position index
     i <- (c-1)*(cycle_length) + 2
 
-    # Temperature Swap
-    swap_move <- temp_swap_move(type = swap_type, c = c,
-                                quanta = quanta, mode_info = mode_info,
-                                x_curr = x[i-1, , , drop = FALSE],
-                                beta_curr = beta_indexes[c, ],
-                                k_curr = k_indexes[c, ],
-                                l_curr = l[i-1, ],
-                                l_target, target_args,
-                                K = K,
-                                odd_indices = odd_indices,
-                                even_indices = even_indices,
-                                d = d)
+    # Temperature Swaps
+    for(j in 1:Temp_Moves){
 
-    swap_acc[c, ] <- swap_move$acc
-    k_indexes[c+1, ] <- swap_move$k_next
-    beta_indexes[c+1, ] <- swap_move$beta_next
-    x[i, , ] <- swap_move$x_next
-    l[i, ] <- swap_move$l_next
+      swap_arguments <- list(type = swap_type, j_deo = ifelse(Temp_Moves == 1, c, j),
+                             quanta = quanta, mode_info = mode_info,
+                             beta_curr = beta_indexes[c, j, ],
+                             k_curr = k_indexes[c, j,  ],
+                             x_curr = x[(i-2)+j, , , drop = FALSE],
+                             l_curr = l[(i-2)+j, ],
+                             l_target, target_args,
+                             K = K,
+                             odd_indices = odd_indices,
+                             even_indices = even_indices,
+                             d = d)
+      swap_move <- do.call(temp_swap_move, swap_arguments)
+
+      swap_acc[c, j, ] <- swap_move$acc
+      k_indexes[c, j+1, ] <- swap_move$k_next
+      beta_indexes[c, j+1, ] <- swap_move$beta_next
+
+      x[(i-1) + j, , ] <- swap_move$x_next
+      l[(i-1) + j, ] <- swap_move$l_next
+
+    }
 
     # Within temperature moves
+
+    # Update current cycle position index
+    i <- i + Temp_Moves - 1
     for(k in 1:K){
-      temperature_arguments <- c(list(x_0 = x[i, k , ],
-                                      l_0 = l[i, k],
-                                      beta = beta_indexes[c+1, k],
-                                      custom_rw_sampler = sampler_list[[ swap_move$k_next[k] ]],
-                                      scale = scale_list[[ swap_move$k_next[k] ]],
-                                      S = Within_Moves, burn = 0, silent = TRUE),
-                                 l_target = l_target, target_args)
-      rwm_moves <- do.call(rwm_sampler_chain, temperature_arguments)
-      rwm_acc[c, , swap_move$k_next[k]] <- rwm_moves$acc
+
+      rwm_level_args <- list(x_0 = x[i, k , ],
+                             l_0 = l[i, k],
+                             beta = beta_indexes[c, Temp_Moves + 1, k],
+                             custom_rw_sampler = sampler_list[[ k_indexes[c, Temp_Moves + 1, k] ]],
+                             scale = scale_list[[ k_indexes[c, Temp_Moves + 1, k] ]],
+                             S = Within_Moves, burn = 0, silent = TRUE)
+      rwm_moves <- do.call(rwm_sampler_chain, c(rwm_level_args, l_target, target_args))
+
+      rwm_acc[c, , k_indexes[c, Temp_Moves + 1, k]] <- rwm_moves$acc
       x[i + 1:Within_Moves, k, ] <- rwm_moves$x
       l[i + 1:Within_Moves, k] <- rwm_moves$l
+
     }
+
+    # Copy parameters for next cycle
+    k_indexes[c+1, 1, ] <- k_indexes[c, Temp_Moves + 1, ]
+    beta_indexes[c+1, 1, ] <- beta_indexes[c, Temp_Moves + 1, ]
 
   }
   global_times[2] <- Sys.time()
 
 #--- Post processing and result -------------
 
-  swap_acc_rates <- apply(swap_acc, 2, function(swaps) mean(swaps[swaps>=0]))
-  rwm_acc_rates <- colMeans(rwm_acc, na.rm = TRUE, dims = 2)
+  swap_acc_rates <- apply(swap_acc, 3, function(swaps) mean(swaps[swaps>=0]))
+  rwm_acc_rates <- colMeans(rwm_acc, dims = 2)
 
   if(!silent){
     cat("Finished Sampling", sep = "\n")
@@ -157,7 +173,9 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
   if(burn_cycles == -1){
     global_times[3] <- Sys.time()
-    return(list(x = x, l = l, k_indexes = k_indexes, beta_indexes = beta_indexes,
+    return(list(x = x, l = l,
+                k_indexes = k_indexes[-(Cycles+1), , ],
+                beta_indexes = beta_indexes[-(Cycles+1), , ],
                 swap_acc = swap_acc, swap_acc_rates = swap_acc_rates,
                 rwm_acc = rwm_acc, rwm_acc_rates = rwm_acc_rates,
                 cycle_times = cycle_times, global_times = global_times))
@@ -169,13 +187,13 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   if(burn_cycles == 0){
     rwm_acc_r <- rwm_acc
     swap_acc_r <- swap_acc
-    b_r <- beta_indexes[-1, ]
-    k_r <- k_indexes[-1, ]
+    b_r <- beta_indexes[-c(1,Cycles+1), , ]
+    k_r <- k_indexes[-c(1,Cycles+1), , ]
   }else{
     rwm_acc_r <- rwm_acc[-seq(1,burn_cycles), , ]
     swap_acc_r <- swap_acc[-seq(1,burn_cycles), ]
-    b_r <- beta_indexes[-seq(1,1+burn_cycles), ]
-    k_r <- k_indexes[-seq(1,1+burn_cycles), ]
+    b_r <- beta_indexes[-c(seq(1,burn_cycles),Cycles + 1), , ]
+    k_r <- k_indexes[-c(seq(1,burn_cycles),Cycles + 1), , ]
   }
 
   global_times[3] <- Sys.time()

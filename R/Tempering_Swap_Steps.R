@@ -141,7 +141,7 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
 
 }
 
-deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+deo_swap_move <- function(j, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                           K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
 
   stopifnot(c >= 1)
@@ -162,7 +162,7 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
   l_next <- l_curr
 
   # Choose whether to swap odd or even indices deterministically based on c
-  if(c %% 2 == 1){
+  if(j %% 2 == 1){
     b_1 <- odd_indices
   } else{
     b_1 <- even_indices
@@ -199,7 +199,7 @@ deo_swap_move <- function(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
 
 }
 
-temp_swap_move <- function(type = "deo", c = NULL, quanta = FALSE, mode_info = NULL,
+temp_swap_move <- function(type = "deo", j_deo = NULL, quanta = FALSE, mode_info = NULL,
                            x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                            K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
 
@@ -218,7 +218,7 @@ temp_swap_move <- function(type = "deo", c = NULL, quanta = FALSE, mode_info = N
 
   # QuanTA Swapping
   if(type == "deo"){
-    return(deo_quanta_move(mode_info, c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+    return(deo_quanta_move(mode_info, j_deo, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                            K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
   }
   if(type == "seo"){
