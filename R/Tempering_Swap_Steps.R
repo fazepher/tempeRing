@@ -56,8 +56,8 @@ naive_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K 
   b_2 <- b_1 + 1
 
   # We get which "machines" have the beta indexes
-  m_1 <- which(k_next == b_1[i])
-  m_2 <- which(k_next == b_2[i])
+  m_1 <- which(k_next == b_1)
+  m_2 <- which(k_next == b_2)
   if(d == 1){
     nswap <- attempt_swap(x_next[m_1], x_next[m_2],
                           beta_next[m_1], beta_next[m_2],
@@ -70,7 +70,7 @@ naive_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K 
                           l_target, ...)
   }
   m <- c(m_1, m_2)
-  b <- c(b_2[i], b_1[i])
+  b <- c(b_2, b_1)
   beta_next[m] <- nswap$beta_next
   l_next[m] <- nswap$l_next
   acc[b] <- nswap$acc
@@ -139,7 +139,7 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
 
 }
 
-deo_swap_move <- function(j_deo, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+deo_swap_move <- function(x_curr, j_deo, beta_curr, k_curr, l_curr, l_target, ...,
                           K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
 
   stopifnot(j_deo >= 1)
