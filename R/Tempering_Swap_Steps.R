@@ -139,10 +139,10 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
 
 }
 
-deo_swap_move <- function(j, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+deo_swap_move <- function(j_deo, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                           K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
 
-  stopifnot(c >= 1)
+  stopifnot(j_deo >= 1)
   K <- K %||% length(k_curr)
   stopifnot(K >= 3)
   d <- d %||% ncol(x_curr)
@@ -160,7 +160,7 @@ deo_swap_move <- function(j, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
   l_next <- l_curr
 
   # Choose whether to swap odd or even indices deterministically based on c
-  if(j %% 2 == 1){
+  if(j_deo %% 2 == 1){
     b_1 <- odd_indices
   } else{
     b_1 <- even_indices
@@ -203,7 +203,7 @@ temp_swap_move <- function(type = "deo", j_deo = NULL, quanta = FALSE, mode_info
 
   # Regular PT Swapping
   if(type == "deo" && !quanta){
-    return(deo_swap_move(c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+    return(deo_swap_move(x_curr, j_deo, beta_curr, k_curr, l_curr, l_target, ...,
                          K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
   }
   if(type == "seo" && !quanta){
