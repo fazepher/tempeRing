@@ -57,7 +57,8 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent
 
   # This appears to be the "non-robust" G, earlier exit if G_type is not robust (the default 1)
   if(G_type != 1){
-    return(0.5*length(x)*(log(2*pi)-log(beta)) + mod_beta$lP_j)
+    G_canon <- 0.5*(length(x)*(log(2*pi)-log(beta)) + log(HAT_info$Cov[mod_beta$A]))
+    return(l_mod + G_canon + mod_beta$lP_j - log(HAT_info$w[mod_beta$A]))
   }
 
   # Robust G otherwise
