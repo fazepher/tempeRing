@@ -197,6 +197,7 @@ deo_swap_move <- function(x_curr, j_deo, beta_curr, k_curr, l_curr, l_target, ..
 
 }
 
+#' @export
 temp_swap_move <- function(type = "deo", j_deo = NULL, quanta = FALSE, mode_info = NULL,
                            x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                            K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){

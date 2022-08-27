@@ -1,4 +1,5 @@
 
+#' @export
 get_HAT_info <- function(mode_guess, l_target, ...,
                          optimize = TRUE, method = "Nelder-Mead", control_optim = list(fnscale = -1)){
 
@@ -33,6 +34,7 @@ modAssignment <- function(x, beta, HAT_info){
 
 }
 
+#' @export
 lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent = FALSE){
 
   ## Basic Weight Preservation
@@ -78,6 +80,7 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent
 
 }
 
+#' @export
 HAT_rwm_chain <- function(ltemp_target, ..., HAT_info, G_type = 1,
                           beta_schedule, swap_type = "deo",
                           scale = 1, Cycles = 1000, Temp_Moves = 1, Within_Moves = 5,

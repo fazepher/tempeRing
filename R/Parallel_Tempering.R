@@ -1,4 +1,5 @@
 
+#' @export
 PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
                          scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                          x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
