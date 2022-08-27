@@ -31,6 +31,16 @@ test_that("RWM works", {
 
   }))
 
-
+  # We have to pass the same length scale and mu
+  expect_error(rwm_sampler_chain(lmvtnorm,
+                                 mu = rep(0, 20), scale = 5,
+                                 S = 5,
+                                 burn = 1,
+                                 silent = TRUE))
+  expect_silent(rwm_sampler_chain(lmvtnorm,
+                                  mu = rep(0, 20), scale = rep(5,20),
+                                  S = 5,
+                                  burn = 1,
+                                  silent = TRUE))
 
 })

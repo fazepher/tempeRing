@@ -1,4 +1,5 @@
 
+#' @export
 get_HAT_info <- function(mode_guess, l_target, ...,
                          optimize = TRUE, method = "Nelder-Mead", control_optim = list(fnscale = -1)){
 
@@ -33,6 +34,7 @@ modAssignment <- function(x, beta, HAT_info){
 
 }
 
+#' @export
 lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent = FALSE){
 
   ## Basic Weight Preservation
@@ -78,9 +80,10 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent
 
 }
 
+#' @export
 HAT_rwm_chain <- function(ltemp_target, ..., HAT_info, G_type = 1,
                           beta_schedule, swap_type = "deo",
-                          scale = 1, Temp_Moves = 1000, Within_Moves = 10,
+                          scale = 1, Cycles = 1000, Temp_Moves = 1, Within_Moves = 5,
                           x_0 = NULL, x_0_u = 2, seed = NULL,
                           custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                           silent = FALSE){
@@ -89,7 +92,7 @@ HAT_rwm_chain <- function(ltemp_target, ..., HAT_info, G_type = 1,
   hat_args <- c(list(l_target = lHAT_target, G_type = G_type, HAT_info = HAT_info,
                      ltemp_target = ltemp_target), rlang::dots_list(...),
                 list(beta_schedule = beta_schedule, swap_type = swap_type,
-                     scale = scale, Temp_Moves = Temp_Moves, Within_Moves = Within_Moves,
+                     scale = scale, Cycles = Cycles, Temp_Moves = Temp_Moves, Within_Moves = Within_Moves,
                      x_0 = x_0, x_0_u = x_0_u, seed = seed,
                      custom_rw_sampler = custom_rw_sampler, target_names = target_names, d = d,
                      silent = silent))

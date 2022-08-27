@@ -86,38 +86,36 @@ naive_quanta_move <- function(mode_info, x_curr, beta_curr, k_curr, l_curr, l_ta
   l_next <- l_curr
 
   # Choose with replacement which indexes we attempt to swap
-  b_1 <- sample.int(K-1, K %/% 2, replace = TRUE)
+  b_1 <- sample(1:(K-1),1)
   b_2 <- b_1 + 1
 
-  for(i in seq_along(b_1)){
-    # We get which "machines" have the beta indexes
-    m_1 <- which(k_next == b_1[i])
-    m_2 <- which(k_next == b_2[i])
-    m <- c(m_1, m_2)
+  # We get which "machines" have the beta indexes
+  m_1 <- which(k_next == b_1)
+  m_2 <- which(k_next == b_2)
+  m <- c(m_1, m_2)
 
 
-    if(d == 1){
-      nswap <- attempt_quanta_1d(mode_info,
-                                 x_next[m_1], x_next[m_2],
-                                 beta_next[m_1], beta_next[m_2],
-                                 l_next[m_1], l_next[m_2],
-                                 l_target, ...)
-      x_next[m] <- nswap$x_next
-    }else{
-      nswap <- attempt_quanta_md(mode_info,
-                                 x_next[1, m_1, ], x_next[1, m_2, ],
-                                 beta_next[m_1], beta_next[m_2],
-                                 l_next[m_1], l_next[m_2],
-                                 l_target, ...)
-      x_next[1, m, ] <- nswap$x_next
-    }
-    b <- c(b_2[i], b_1[i])
-    beta_next[m] <- nswap$beta_next
-    l_next[m] <- nswap$l_next
-    if(nswap$acc){
-      k_next[m] <- b
-      acc[b] <- TRUE
-    }
+  if(d == 1){
+    nswap <- attempt_quanta_1d(mode_info,
+                               x_next[m_1], x_next[m_2],
+                               beta_next[m_1], beta_next[m_2],
+                               l_next[m_1], l_next[m_2],
+                               l_target, ...)
+    x_next[m] <- nswap$x_next
+  }else{
+    nswap <- attempt_quanta_md(mode_info,
+                               x_next[1, m_1, ], x_next[1, m_2, ],
+                               beta_next[m_1], beta_next[m_2],
+                               l_next[m_1], l_next[m_2],
+                               l_target, ...)
+    x_next[1, m, ] <- nswap$x_next
+  }
+  b <- c(b_2, b_1)
+  beta_next[m] <- nswap$beta_next
+  l_next[m] <- nswap$l_next
+  if(nswap$acc){
+    k_next[m] <- b
+    acc[b] <- TRUE
   }
 
   return(mget(c("x_next","acc","k_next","beta_next","l_next")))
@@ -186,10 +184,10 @@ seo_quanta_move <- function(mode_info, x_curr, beta_curr, k_curr, l_curr, l_targ
 
 }
 
-deo_quanta_move <- function(mode_info, c, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+deo_quanta_move <- function(mode_info, j_deo, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                             K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
 
-  stopifnot(c >= 1)
+  stopifnot(j_deo >= 1)
   K <- K %||% length(k_curr)
   stopifnot(K >= 3)
   d <- d %||% ncol(x_curr)
@@ -207,7 +205,7 @@ deo_quanta_move <- function(mode_info, c, x_curr, beta_curr, k_curr, l_curr, l_t
   l_next <- l_curr
 
   # Choose whether to swap odd or even indices deterministically based on c
-  if(c %% 2 == 1){
+  if(j_deo %% 2 == 1){
     b_1 <- odd_indices
   } else{
     b_1 <- even_indices
@@ -247,4 +245,3 @@ deo_quanta_move <- function(mode_info, c, x_curr, beta_curr, k_curr, l_curr, l_t
   return(mget(c("x_next","acc","k_next","beta_next","l_next")))
 
 }
-

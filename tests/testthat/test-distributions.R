@@ -64,7 +64,8 @@ test_that("Mixtures work", {
 
 test_that("Tawn et al's Skew Normal works",{
 
-  expect_equal(lmix_hatskewnorm(rep(-45,5), mu = c(-45,-15,15,45)),
+  expect_equal(lmix_hatskewnorm(rep(-45,5), mu = c(-45,-15,15,45),
+                                shared_args = list(sigma = 1, alpha = 2)),
                (5*sn::dsn(x = -45, xi = c(-45,-15,15,45), omega = 1, alpha = 2, log = TRUE) +
                   rep(log(0.25),4)) |> logSumExp())
 
