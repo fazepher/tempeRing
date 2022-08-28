@@ -290,14 +290,6 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
                        shared_args = NULL)
   }
 
-  #--- QuanTA levels checking -------------
-
-  if(!is.null(alps_quanta_levels)){
-    quanta <- FALSE
-  }else{
-
-  }
-
   #--- Preparation -------------
 
   # General PT parameters
@@ -462,9 +454,9 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
     k_i <- which(k_indexes[c, Temp_Moves + 1, ] == K)
     for(s in 1:Within_Moves){
       x_prop_lps <- lpsampler(x[i+s-1, k_i , ], beta_schedule[K], HAT_info)
-      l_prop_lps <- do.call(l_target, c(list(x = x_prop_lps, beta = beta_schedule[k]), target_args))
-      lsaq_c2p <- lpsampler_q(x_prop_lps, beta_schedule[k],  HAT_info)
-      lsaq_p2c <- lpsampler_q(x[i+s-1, k_i , ], beta_schedule[k],  HAT_info)
+      l_prop_lps <- do.call(l_target, c(list(x = x_prop_lps, beta = beta_schedule[K]), target_args))
+      lsaq_c2p <- lpsampler_q(x_prop_lps, beta_schedule[K],  HAT_info)
+      lsaq_p2c <- lpsampler_q(x[i+s-1, k_i , ], beta_schedule[K],  HAT_info)
       lsa_step <- mh_step(x_curr = x[i+s-1, k_i , ],
                           x_prop = x_prop_lps,
                           l_curr = l[i+s-1, k_i],
