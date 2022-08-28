@@ -6,6 +6,8 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
+**PACKAGE UNDER ACTIVE DEVELOPMENT, NOT READY FOR PRODUCTION**
+
 The goal of tempeRing is to provide an R package for my Summer Tempering
 project at the Warwick Statistics CDT.
 
@@ -21,18 +23,27 @@ Available methods include:
 3)  Parallel Tempering/Replica Exchange methods with several dynamics:
 
     1.  Standard naive implementation
-    2.  Reversible dynamics via Stochastic Even-Odd swaps (SEO)
+    2.  Reversible dynamics via Stochastic Even-Odd swaps (SEO) *à la*
+        Syed et. al (2021) doi: [10.1111/rssb.12464](10.1111/rssb.12464)
     3.  Non-reversible dynamics via Deterministic Even-Odd swaps (DEO)
-        *à la* **Okabe (see also Syed)**
+        *à la* **Okabe et al. (2001)** doi:
+        [10.1016/S0009-2614(01)00055-0](10.1016/S0009-2614(01)00055-0),
+        see also Syed et. al (2021).  
     4.  Accelarated Tempering for symmetric targets via QuanTA
-        transformations *à la* **Tawn**
+        transformations *à la* **Tawn and Roberts (2019)** doi:
+        [10.1017/apr.2019.35](10.1017/apr.2019.35)
     5.  Weight-Preservation via Hessian Adjusted Targets (HAT) *à la*
-        **Tawn and Roberts**
+        **Tawn et al. (2020)** doi:
+        [10.1007/s11222-019-09863-3](10.1007/s11222-019-09863-3)
 
-4)  Parallel Annealing with both reversible and non-reversible dynamics:
+Methods under development:
 
-    1.  Annealed Leap-Point Sampler (ALPS)
-    2.  Non-Reversible ALPS via DEO
+4)  Annealed Leap-Point Sampler (ALPS) <http://arxiv.org/abs/2112.12908>
+
+Future plans:
+
+5)  Adaptive schemes
+6)  Online optimal scaling
 
 Emphasis is on allowing us to see the methods in action on illustrative
 toy examples and not in performance (e.g. everything is coded in R so
