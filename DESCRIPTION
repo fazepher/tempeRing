@@ -16,7 +16,8 @@ Description: The goal of tempeRing is to provide an R package for my Summer Temp
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-URL: https://github.com/fazepher/tempeRing
+URL: https://github.com/fazepher/tempeRing,
+    https://fazepher.github.io/tempeRing/
 BugReports: https://github.com/fazepher/tempeRing/issues
 RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
