@@ -30,7 +30,7 @@ modAssignment <- function(x, beta, HAT_info){
                   mu = HAT_info$modes, w = HAT_info$w, Cov = HAT_info$Cov)
   A <- which.max(lP_vec)
 
-  return(list("A" = A, "lP_j" = lP_vec[A]))
+  return(list("A" = A[1], "lP_j" = lP_vec[A[1]]))
 
 }
 
