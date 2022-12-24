@@ -21,7 +21,7 @@ test_that("Metropolis-Hastings step works", {
                         l_next = rep(stats::dnorm(0, log = TRUE), 5),
                         accepted = rep(TRUE, 5)))
 
-  # We should always accept an "up-hill" proposal
+  # We should always accept an "up-hill" symmetrical proposal
   expect_identical(mh_step(x_curr = 1,
                            x_prop = 0,
                            l_curr = stats::dnorm(1, log = TRUE),
