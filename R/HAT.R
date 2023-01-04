@@ -11,15 +11,20 @@ get_HAT_info <- function(mode_guess, l_target, ...,
   }else{
     modes <- mode_guess
   }
+
+  l_target_modes <- vapply(modes, l_target, numeric(1), beta = 1, ...)
+
   mH <- lapply(modes, function(m) -(numDeriv::hessian(l_target, m, ...)))
   Cov <- lapply(mH,solve)
   cholCov <- lapply(Cov,chol)
-  detCov <- vapply(cholCov, function(chS) prod(diag(chS))^2, numeric(1))
-  l_target_modes <- vapply(modes, l_target, numeric(1), beta = 1, ...)
-  w_tilde <- exp(l_target_modes + 0.5*log(detCov))
-  w <- w_tilde/sum(w_tilde)
+  half_l_detCov <- vapply(cholCov, function(chS) sum(log(diag(chS))), numeric(1))
+  detCov <- exp(2*half_l_detCov)
 
-  return(mget(c("mH","Cov","cholCov","detCov","l_target_modes","w","modes")))
+  l_w_tilde <- l_target_modes + half_l_detCov
+  ls_w_tilde <- matrixStats::logSumExp(l_w_tilde)
+  w <- exp(l_w_tilde-ls_w_tilde)
+
+  return(mget(c("mH","Cov","cholCov","half_l_detCov","detCov","l_target_modes","w","modes")))
 
 }
 
@@ -47,36 +52,17 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent
   mod_beta <- modAssignment(x, beta, HAT_info)
   mod_1 <- modAssignment(x, 1, HAT_info)
   l_mod <- HAT_info$l_target_modes[ mod_beta$A ]
-  if(is.na(mod_beta) || is.na(mod_1) || is.na(l_mod)){stop("Error")}
+  if(is.na(mod_beta$lP_j) || is.na(mod_1$lP_j) || is.na(l_mod)){stop("Error")}
 
   # Early exit if the assigned modes are the same
-  l_w <- l_eval + (1-beta) * l_mod
-  if(mod_beta$A == mod_1$A){ return(l_w) }
+  if(mod_beta$A == mod_1$A){
+    return(l_eval + (1-beta)*l_mod)
+  }
 
   ## G Weight Preservation only when the assigned modes differ
-
-  # This appears to be the "non-robust" G, earlier exit if G_type is not robust (the default 1)
-  if(G_type != 1){
-    G_canon <- 0.5*(length(x)*(log(2*pi)-log(beta)) + log(HAT_info$Cov[mod_beta$A]))
-    return(l_mod + G_canon + mod_beta$lP_j - log(HAT_info$w[mod_beta$A]))
-  }
-
-  # Robust G otherwise
-
-  weight_G <- (2 / (1 + exp(mod_1$lP_j - mod_beta$lP_j))) - 1
-
-  # Early exit if weight_G is negative
-  # I DON'T KNOW THE THEORY HERE, PAPER DOESN'T MENTION IT, ASK NICK AND GARETH
-  # I WILL RETURN A -Inf log density to always reject a move to such a state
-  if(weight_G < 0){
-    if(!silent){warning("weight_G is negative")}
-    return(-Inf)
-  }
-
-  l_cold <- log(1 - weight_G) + do.call(ltemp_target, list(x=x, beta =1, ...))
-  l_wp_beta <- log(weight_G) + l_w
-  l_G <- logSumExp(c(l_cold, l_wp_beta))
-
+  l_corr_ctes <- 0.5*length(HAT_info$modes[[1]])*(log(2*pi) - log(beta))
+  l_approx_w <- mod_beta$lP_j - log(HAT_info$w[mod_beta$A])
+  l_G <- l_mod + l_corr_ctes + HAT_info$half_l_detCov[mod_beta$A] + l_approx_w
   return(l_G)
 
 }
