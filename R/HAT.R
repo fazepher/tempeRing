@@ -40,7 +40,7 @@ modAssignment <- function(x, beta, HAT_info){
 }
 
 #' @export
-lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent = FALSE){
+lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
 
   ## Basic Weight Preservation
 
@@ -68,7 +68,7 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., G_type = 1, silent
 }
 
 #' @export
-HAT_rwm_chain <- function(ltemp_target, ..., HAT_info, G_type = 1,
+HAT_rwm_chain <- function(ltemp_target, ..., HAT_info,
                           beta_schedule, swap_type = "deo",
                           scale = 1, Cycles = 1000, Temp_Moves = 1, Within_Moves = 5,
                           x_0 = NULL, x_0_u = 2, seed = NULL,
@@ -76,7 +76,7 @@ HAT_rwm_chain <- function(ltemp_target, ..., HAT_info, G_type = 1,
                           silent = FALSE){
 
   # Then it's just a wrapper of the PT algorithm for the new HAT target
-  hat_args <- c(list(l_target = lHAT_target, G_type = G_type, HAT_info = HAT_info,
+  hat_args <- c(list(l_target = lHAT_target, HAT_info = HAT_info,
                      ltemp_target = ltemp_target), rlang::dots_list(...),
                 list(beta_schedule = beta_schedule, swap_type = swap_type,
                      scale = scale, Cycles = Cycles, Temp_Moves = Temp_Moves, Within_Moves = Within_Moves,
