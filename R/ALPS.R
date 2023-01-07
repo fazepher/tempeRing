@@ -260,7 +260,7 @@ alps_swap_move <- function(type = "deo", j_deo = NULL,
 }
 
 #' @export
-ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
+ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                            beta_schedule, swap_type = "deo", alps_quanta_levels = NULL,
                            scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                            x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
@@ -270,24 +270,12 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
   #--- HAT use -------------
   if(HAT){
     l_target <- lHAT_target
-    target_args <- c(list(G_type = G_type, HAT_info = HAT_info, ltemp_target = ltemp_target),
+    target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
                      rlang::dots_list(...))
     print(target_args)
   }else{
     l_target <- ltemp_target
     target_args <- rlang::dots_list(...)
-  }
-
-  lpsampler <- function(x_curr, beta_max, mode_info = HAT_info){
-    z <- sample(x = seq_along(mode_info$w),size = 1, prob = mode_info$w)
-    x_prop <- rmvtnorm_temp(n = 1, beta = beta_max, mu = mode_info$modes[[z]],
-                            LChol_sigma = t(mode_info$cholCov[[z]]))
-    return(x_prop)
-  }
-  lpsampler_q <- function(x, beta_max, mode_info = HAT_info){
-    ulmix_mvtnorm_temp(x, beta = beta_max,
-                       w = mode_info$w, mu = mode_info$modes, sigma = mode_info$Cov,
-                       shared_args = NULL)
   }
 
   #--- Preparation -------------
@@ -298,6 +286,19 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
   K <- length(beta_schedule)
   odd_indices <- seq(1, K, by = 2)
   even_indices <- seq(2, K, by = 2)
+
+  # Leap-Point Sampler
+  lpsampler <- function(x_curr, beta_max = beta_schedule[K], mode_info = HAT_info){
+    z <- sample(x = seq_along(mode_info$w),size = 1, prob = mode_info$w)
+    x_prop <- rmvtnorm_temp(n = 1, beta = beta_max, mu = mode_info$modes[[z]],
+                            LChol_sigma = t(mode_info$cholCov[[z]]))
+    return(x_prop)
+  }
+  lpsampler_q <- function(x, beta_max = beta_schedule[K], mode_info = HAT_info){
+    Sigmas_beta <- lapply(mode_info$Cov, function(Sigma) Sigma/beta_max)
+    lmix_mvtnorm(x,w = mode_info$w, mu = mode_info$modes, sigma = Sigmas_beta)
+  }
+
 
   # QuanTA levels checking
   if(!is.null(alps_quanta_levels)){
@@ -453,22 +454,15 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
     # Leap Sampler at Coldest Level
     k_i <- which(k_indexes[c, Temp_Moves + 1, ] == K)
     for(s in 1:Within_Moves){
-      x_prop_lps <- lpsampler(x_curr = x[i+s-1, k_i , ],
-                              beta_max = beta_schedule[K],
-                              mode_info = HAT_info)
+      x_curr_lps <- x[i+s-1, k_i , ]
+      l_curr_lps <- l[i+s-1, k_i]
+      x_prop_lps <- lpsampler(x_curr = x_curr_lps)
       l_prop_lps <- do.call(l_target, c(list(x = x_prop_lps, beta = beta_schedule[K]), target_args))
-      lsaq_c2p <- lpsampler_q(x = x_prop_lps,
-                              beta_max = beta_schedule[K],
-                              mode_info = HAT_info)
-      lsaq_p2c <- lpsampler_q(x = x[i+s-1, k_i , ],
-                              beta_max = beta_schedule[K],
-                              mode_info = HAT_info)
-      lsa_step <- mh_step(x_curr = x[i+s-1, k_i , ],
-                          x_prop = x_prop_lps,
-                          l_curr = l[i+s-1, k_i],
-                          l_prop = l_prop_lps,
-                          lq_c2p = lsaq_c2p,
-                          lq_p2c = lsaq_p2c,
+      lsaq_c2p <- lpsampler_q(x = x_prop_lps)
+      lsaq_p2c <- lpsampler_q(x = x_curr_lps)
+      lsa_step <- mh_step(x_curr = x_curr_lps, x_prop = x_prop_lps,
+                          l_curr = l_curr_lps, l_prop = l_prop_lps,
+                          lq_c2p = lsaq_c2p, lq_p2c = lsaq_p2c,
                           do_checks = FALSE)
       x[i+s, k_i, ] <- lsa_step$x_next
       l[i+s, k_i] <- lsa_step$l_next
