@@ -1,12 +1,14 @@
 
 #' @export
-get_HAT_info <- function(mode_guess, l_target, ...,
+get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
                          optimize = TRUE, method = "Nelder-Mead", control_optim = list(fnscale = -1)){
 
+  bh <- beta_hat %||% 1
   if(optimize){
     optimizations <- lapply(mode_guess,
-                            function(m) optim(m, l_target, beta = 1, ..., method = method,
+                            function(m) optim(m, l_target, beta = bh, ..., method = method,
                                               control = control_optim, hessian = TRUE))
+    lapply(optimizations, function(o) c(o$convergence, o$counts)) |> print()
     modes <- lapply(optimizations,function(o) o$par)
   }else{
     modes <- mode_guess
