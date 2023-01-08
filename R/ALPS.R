@@ -309,6 +309,7 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                  "where K is the number of temperatures used.",
                  sep = "\n"))
     }
+    quanta_mode_info <- quanta_mode_info %||% HAT_info
   }
 
   # Dimension and Scales
