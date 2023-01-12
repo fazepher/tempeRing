@@ -16,7 +16,11 @@ get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
 
   l_target_modes <- vapply(modes, l_target, numeric(1), beta = 1, ...)
 
-  mH <- lapply(modes, function(m) -(numDeriv::hessian(l_target, m, ...)))
+  if(optimize){
+    mH <- lapply(optimizations, function(o) -o$hessian)
+  }else{
+    mH <- lapply(modes, function(m) -(numDeriv::hessian(l_target, m, ...)))
+  }
   Cov <- lapply(mH,solve)
   cholCov <- lapply(Cov,chol)
   half_l_detCov <- vapply(cholCov, function(chS) sum(log(diag(chS))), numeric(1))
