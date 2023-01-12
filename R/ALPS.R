@@ -1,6 +1,267 @@
 
-ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
-                           beta_schedule, swap_type = "deo",
+naive_quanta_alps_move <- function(alps_quanta_levels, mode_info,
+                                   x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                                   K = NULL, d = NULL){
+
+  K <- K %||% length(k_curr)
+  stopifnot(K >= 3)
+  d <- d %||% ncol(x_curr)
+
+  acc <- rep(-1, K)
+  x_next <- x_curr
+  k_next <- k_curr
+  beta_next <- beta_curr
+  l_next <- l_curr
+
+  # Choose with replacement which indexes we attempt to swap
+  b_1 <- sample(1:(K-1),1)
+  b_2 <- b_1 + 1
+
+  # We get which "machines" have the beta indexes
+  m_1 <- which(k_next == b_1)
+  m_2 <- which(k_next == b_2)
+  m <- c(m_1, m_2)
+
+  if(b_1 %in% alps_quanta_levels){
+    if(d == 1){
+      nswap <- attempt_quanta_1d(mode_info,
+                                 x_next[m_1], x_next[m_2],
+                                 beta_next[m_1], beta_next[m_2],
+                                 l_next[m_1], l_next[m_2],
+                                 l_target, ...)
+      x_next[m] <- nswap$x_next
+    }else{
+      nswap <- attempt_quanta_md(mode_info,
+                                 x_next[1, m_1, ], x_next[1, m_2, ],
+                                 beta_next[m_1], beta_next[m_2],
+                                 l_next[m_1], l_next[m_2],
+                                 l_target, ...)
+      x_next[1, m, ] <- nswap$x_next
+    }
+  }else{
+    if(d == 1){
+      nswap <- attempt_swap(x_next[m_1], x_next[m_2],
+                            beta_next[m_1], beta_next[m_2],
+                            l_next[m_1], l_next[m_2],
+                            l_target, ...)
+    }else{
+      nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
+                            beta_next[m_1], beta_next[m_2],
+                            l_next[m_1], l_next[m_2],
+                            l_target, ...)
+    }
+  }
+  b <- c(b_2, b_1)
+  beta_next[m] <- nswap$beta_next
+  l_next[m] <- nswap$l_next
+  acc[b] <- nswap$acc
+  if(nswap$acc){
+    k_next[m] <- b
+  }
+
+  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
+
+}
+
+seo_quanta_alps_move <- function(alps_quanta_levels, mode_info,
+                                 x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                                 K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
+
+
+  K <- K %||% length(k_curr)
+  stopifnot(K >= 3)
+  d <- d %||% ncol(x_curr)
+  odd_indices <- odd_indices %||% seq(1, K, by = 2)
+  even_indices <- even_indices %||% seq(2, K, by = 2)
+  if(K %% 2 != 0){
+    odd_indices <- odd_indices[-(K+1)/2]
+  } else{
+    even_indices <- even_indices[-K/2]
+  }
+  acc <- rep(-1,K)
+  x_next <- x_curr
+  k_next <- k_curr
+  beta_next <- beta_curr
+  l_next <- l_curr
+
+  # Choose whether to swap odd or even indices with equal probability
+  if(runif(1) <= 0.5){
+    b_1 <- odd_indices
+  } else{
+    b_1 <- even_indices
+  }
+  b_2 <- b_1 + 1
+
+  for(i in seq_along(b_1)){
+    # We get which "machines" have the beta indexes
+    m_1 <- which(k_next == b_1[i])
+    m_2 <- which(k_next == b_2[i])
+    m <- c(m_1, m_2)
+
+    if(b_1[i] %in% alps_quanta_levels){
+      if(d == 1){
+        nswap <- attempt_quanta_1d(mode_info,
+                                   x_next[m_1], x_next[m_2],
+                                   beta_next[m_1], beta_next[m_2],
+                                   l_next[m_1], l_next[m_2],
+                                   l_target, ...)
+        x_next[m] <- nswap$x_next
+      }else{
+        nswap <- attempt_quanta_md(mode_info,
+                                   x_next[1, m_1, ], x_next[1, m_2, ],
+                                   beta_next[m_1], beta_next[m_2],
+                                   l_next[m_1], l_next[m_2],
+                                   l_target, ...)
+        x_next[1, m, ] <- nswap$x_next
+      }
+    }else{
+      if(d == 1){
+        nswap <- attempt_swap(x_next[m_1], x_next[m_2],
+                              beta_next[m_1], beta_next[m_2],
+                              l_next[m_1], l_next[m_2],
+                              l_target, ...)
+      }else{
+        nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
+                              beta_next[m_1], beta_next[m_2],
+                              l_next[m_1], l_next[m_2],
+                              l_target, ...)
+      }
+    }
+    b <- c(b_2[i], b_1[i])
+    beta_next[m] <- nswap$beta_next
+    l_next[m] <- nswap$l_next
+    acc[b] <- nswap$acc
+    if(nswap$acc){
+      k_next[m] <- b
+    }
+
+  }
+
+  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
+
+}
+
+deo_quanta_alps_move <- function(alps_quanta_levels, mode_info, j_deo,
+                                 x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                                 K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
+
+  stopifnot(j_deo >= 1)
+  K <- K %||% length(k_curr)
+  stopifnot(K >= 3)
+  d <- d %||% ncol(x_curr)
+  odd_indices <- odd_indices %||% seq(1, K, by = 2)
+  even_indices <- even_indices %||% seq(2, K, by = 2)
+  if(K %% 2 != 0){
+    odd_indices <- odd_indices[-(K+1)/2]
+  } else{
+    even_indices <- even_indices[-K/2]
+  }
+  acc <- rep(-1, K)
+  x_next <- x_curr
+  k_next <- k_curr
+  beta_next <- beta_curr
+  l_next <- l_curr
+
+  # Choose whether to swap odd or even indices deterministically based on c
+  if(j_deo %% 2 == 1){
+    b_1 <- odd_indices
+  } else{
+    b_1 <- even_indices
+  }
+  b_2 <- b_1 + 1
+
+  for(i in seq_along(b_1)){
+    # We get which "machines" have the beta indexes
+    m_1 <- which(k_next == b_1[i])
+    m_2 <- which(k_next == b_2[i])
+    m <- c(m_1, m_2)
+
+    if(b_1[i] %in% alps_quanta_levels){
+      if(d == 1){
+        nswap <- attempt_quanta_1d(mode_info,
+                                   x_next[m_1], x_next[m_2],
+                                   beta_next[m_1], beta_next[m_2],
+                                   l_next[m_1], l_next[m_2],
+                                   l_target, ...)
+        x_next[m] <- nswap$x_next
+      }else{
+        nswap <- attempt_quanta_md(mode_info,
+                                   x_next[1, m_1, ], x_next[1, m_2, ],
+                                   beta_next[m_1], beta_next[m_2],
+                                   l_next[m_1], l_next[m_2],
+                                   l_target, ...)
+        x_next[1, m, ] <- nswap$x_next
+      }
+    }else{
+      if(d == 1){
+        nswap <- attempt_swap(x_next[m_1], x_next[m_2],
+                              beta_next[m_1], beta_next[m_2],
+                              l_next[m_1], l_next[m_2],
+                              l_target, ...)
+      }else{
+        nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
+                              beta_next[m_1], beta_next[m_2],
+                              l_next[m_1], l_next[m_2],
+                              l_target, ...)
+      }
+    }
+    b <- c(b_2[i], b_1[i])
+    beta_next[m] <- nswap$beta_next
+    l_next[m] <- nswap$l_next
+    acc[b] <- nswap$acc
+    if(nswap$acc){
+      k_next[m] <- b
+    }
+
+  }
+
+  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
+
+}
+
+
+alps_swap_move <- function(type = "deo", j_deo = NULL,
+                           alps_quanta_levels = NULL, mode_info = NULL,
+                           x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                           K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
+
+  # Regular PT Swapping
+  if(is.null(alps_quanta_levels) && type == "deo"){
+    return(deo_swap_move(x_curr, j_deo, beta_curr, k_curr, l_curr, l_target, ...,
+                         K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
+  }
+  if(is.null(alps_quanta_levels) && type == "seo"){
+    return(seo_swap_move(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                         K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
+  }
+  if(is.null(alps_quanta_levels) && type == "naive"){
+    return(naive_swap_move(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K = K, d = d))
+  }
+
+  # QuanTA Swapping for some levels
+  if(type == "deo"){
+    return(deo_quanta_alps_move(alps_quanta_levels, mode_info, j_deo,
+                                x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                                K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
+  }
+  if(type == "seo"){
+    return(seo_quanta_alps_move(alps_quanta_levels, mode_info,
+                                x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                                K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
+  }
+  if(type == "naive"){
+    return(naive_quanta_alps_move(alps_quanta_levels,
+                                  mode_info, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                                  K = K, d = d))
+  }
+
+  stop("Only recognized types of swap are: 'deo', 'seo' and 'naive'.")
+
+}
+
+#' @export
+ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
+                           beta_schedule, swap_type = "deo", alps_quanta_levels = NULL,
                            scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                            x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                            custom_rw_sampler = NULL, target_names = NULL, d = NULL,
@@ -9,24 +270,12 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
   #--- HAT use -------------
   if(HAT){
     l_target <- lHAT_target
-    target_args <- c(list(G_type = G_type, HAT_info = HAT_info, ltemp_target = ltemp_target),
+    target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
                      rlang::dots_list(...))
     print(target_args)
   }else{
     l_target <- ltemp_target
     target_args <- rlang::dots_list(...)
-  }
-
-  lpsampler <- function(x_curr, beta_max, mode_info = HAT_info){
-    z <- sample(x = seq_along(mode_info$w),size = 1, prob = mode_info$w)
-    x_prop <- rmvtnorm_temp(n = 1, beta = beta_max, mu = mode_info$modes[[z]],
-                            LChol_sigma = t(mode_info$cholCov[[z]]))
-    return(x_prop)
-  }
-  lpsampler_q <- function(x, beta_max, mode_info = HAT_info){
-    ulmix_mvtnorm_temp(x, beta = beta_max,
-                       w = mode_info$w, mu = mode_info$modes, sigma = mode_info$Cov,
-                       shared_args = NULL)
   }
 
   #--- Preparation -------------
@@ -37,6 +286,31 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
   K <- length(beta_schedule)
   odd_indices <- seq(1, K, by = 2)
   even_indices <- seq(2, K, by = 2)
+
+  # Leap-Point Sampler
+  lpsampler <- function(x_curr, beta_max = beta_schedule[K], mode_info = HAT_info){
+    z <- sample(x = seq_along(mode_info$w),size = 1, prob = mode_info$w)
+    x_prop <- rmvtnorm_temp(n = 1, beta = beta_max, mu = mode_info$modes[[z]],
+                            LChol_sigma = t(mode_info$cholCov[[z]]))
+    return(x_prop)
+  }
+  lpsampler_q <- function(x, beta_max = beta_schedule[K], mode_info = HAT_info){
+    Sigmas_beta <- lapply(mode_info$Cov, function(Sigma) Sigma/beta_max)
+    lmix_mvtnorm(x,w = mode_info$w, mu = mode_info$modes, sigma = Sigmas_beta)
+  }
+
+
+  # QuanTA levels checking
+  if(!is.null(alps_quanta_levels)){
+    if(!all(alps_quanta_levels %in% seq(1,K-1))){
+      stop(paste("Invalid alps_quanta_levels.",
+                 "These must be the base indexes for which QuanTA swaps will be attempted,",
+                 "hence a vector of integers between 1 and K-1,",
+                 "where K is the number of temperatures used.",
+                 sep = "\n"))
+    }
+    quanta_mode_info <- quanta_mode_info %||% HAT_info
+  }
 
   # Dimension and Scales
   if(is.list(scale)){
@@ -134,15 +408,19 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
     # Temperature Swaps
     for(j in 1:Temp_Moves){
 
-      swap_move <- deo_swap_move(x_curr = x[(i-2)+j, , , drop = FALSE],
-                                 j_deo = ifelse(Temp_Moves == 1, c, j),
-                                 beta_curr = beta_indexes[c, j, ],
-                                 k_curr = k_indexes[c, j,  ], l_curr = l[(i-2)+j, ],
-                                 l_target = l_target, target_args,
-                                 K = K,
-                                 odd_indices = odd_indices,
-                                 even_indices = even_indices,
-                                 d = d)
+      swap_arguments <- list(type = swap_type, j_deo = ifelse(Temp_Moves == 1, c, j),
+                             alps_quanta_levels = alps_quanta_levels, mode_info = quanta_mode_info,
+                             beta_curr = beta_indexes[c, j, ],
+                             k_curr = k_indexes[c, j,  ],
+                             x_curr = x[(i-2)+j, , , drop = FALSE],
+                             l_curr = l[(i-2)+j, ],
+                             l_target, target_args,
+                             K = K,
+                             odd_indices = odd_indices,
+                             even_indices = even_indices,
+                             d = d)
+      swap_move <- do.call(alps_swap_move, swap_arguments)
+
       swap_acc[c, j, ] <- swap_move$acc
       k_indexes[c, j+1, ] <- swap_move$k_next
       beta_indexes[c, j+1, ] <- swap_move$beta_next
@@ -177,16 +455,15 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info, G_type = 1,
     # Leap Sampler at Coldest Level
     k_i <- which(k_indexes[c, Temp_Moves + 1, ] == K)
     for(s in 1:Within_Moves){
-      x_prop_lps <- lpsampler(x[i+s-1, k_i , ], beta_schedule[K], HAT_info)
-      l_prop_lps <- do.call(l_target, c(list(x = x_prop_lps, beta = beta_schedule[k]), target_args))
-      lsaq_c2p <- lpsampler_q(x_prop_lps, beta_schedule[k],  HAT_info)
-      lsaq_p2c <- lpsampler_q(x[i+s-1, k_i , ], beta_schedule[k],  HAT_info)
-      lsa_step <- mh_step(x_curr = x[i+s-1, k_i , ],
-                          x_prop = x_prop_lps,
-                          l_curr = l[i+s-1, k_i],
-                          l_prop = l_prop_lps,
-                          lq_c2p = lsaq_c2p,
-                          lq_p2c = lsaq_p2c,
+      x_curr_lps <- x[i+s-1, k_i , ]
+      l_curr_lps <- l[i+s-1, k_i]
+      x_prop_lps <- lpsampler(x_curr = x_curr_lps)
+      l_prop_lps <- do.call(l_target, c(list(x = x_prop_lps, beta = beta_schedule[K]), target_args))
+      lsaq_c2p <- lpsampler_q(x = x_prop_lps)
+      lsaq_p2c <- lpsampler_q(x = x_curr_lps)
+      lsa_step <- mh_step(x_curr = x_curr_lps, x_prop = x_prop_lps,
+                          l_curr = l_curr_lps, l_prop = l_prop_lps,
+                          lq_c2p = lsaq_c2p, lq_p2c = lsaq_p2c,
                           do_checks = FALSE)
       x[i+s, k_i, ] <- lsa_step$x_next
       l[i+s, k_i] <- lsa_step$l_next
