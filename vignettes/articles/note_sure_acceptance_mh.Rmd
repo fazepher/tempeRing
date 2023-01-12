@@ -1,0 +1,61 @@
+---
+title: "Notes on Sure Acceptance regions for Metropolis Hastings"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(tempeRing)
+```
+
+When doing Metropolis-Hastings (MH) based MCMC some proposals may be surely accepted while others will only be accepted with a probability $p<1$. What follows is a brief note on some cases where we can characterize the "Sure Acceptance" regions. 
+
+Suppose that the target density in a MH algorithm is univariate standard normal so that
+$$\pi(x) \propto \exp\lbrace -x^2/2\rbrace.$$
+Furthermore, let's have our proposals being sampled according to the following normal distribution:
+$$Y|X=x \sim N\left(x + ks^2\dfrac{d}{dx}\log\pi(x), \; s^2\right),$$
+where $s^2 > 0$ is the *scale parameter* of the proposal and $k \geq 0$ can be seen as an algorithm indexing parameter in the sense that, for instance, $k=0$ means we are conducting Random Walk Metropolis (RWM) and $k=1/2$ corresponds to MALA (Metropolis-Adjusted Langevin Algorithm). Since the target is standard normal, we have then that $\dfrac{d}{dx}\log\pi(x)=-x$ and thus
+$$q(y|x) \propto \exp\left\lbrace -\dfrac{(y-x[1-ks^2])^2}{2s^2}\right\rbrace.$$
+
+Now we can compute the MH ratio of a proposal $y$ given a current value of $x$ as
+$$r(y|x)=\dfrac{\pi(y)q(x|y)}{\pi(x)q(y|x)}=\exp\left\lbrace\dfrac{x^2-y^2}{2}+\dfrac{(y-x[1-ks^2])^2-(x-y[1-ks^2])^2}{2s^2}\right\rbrace,$$
+which can be simplified to
+$$r(y|x)=\exp\left\lbrace\dfrac{x^2-y^2}{2}-\dfrac{(x^2-y^2)}{2s^2}+ \dfrac{(x^2-y^2)(1-ks^2)^2}{2s^2}\right\rbrace,$$
+and further into
+$$r(y|x)=\exp\left\lbrace\dfrac{(x^2-y^2)(k^2s^2-2k+1)}{2}\right\rbrace.$$
+This last expression will lead to a sure acceptance if and only if it's at least 1; that is, $y$ is surely accepted as the next state of the chain if and only if
+$$(x^2-y^2)(1-2k+k^2s^2) \geq 0.$$
+
+## RWM and MALA
+
+In RWM, $k=0$ and so the sure acceptance condition reduces to $x^2-y^2 \geq 0$, which is to say $|x|\geq|y|$. Hence, in RWM we will surely accept those proposals who are *closer* to the mode than our current state. On the contrary, a move further away from the mode will always have the (increasing) chance of being rejected.
+
+If $k=1/2$ we are no longer running a RWM algorithm but instead MALA. Here, however, the sure acceptance condition is also the same: 
+$$(x^2-y^2)(1-2k+k^2s^2) \geq 0 \Longleftrightarrow \dfrac{(x^2-y^2)s^2}{4} \geq 0 \Longleftrightarrow |x|\geq|y|.$$
+A proposal towards the mode is surely accepted, a proposal away from the mode may be rejected. 
+
+Does this mean that any MH algorithm works like this? The short and blunt answer is no. Yes, it is true whenever $0 \leq k \leq 1/2$; said otherwise, for all algorithms "between" RWM and MALA we do have that the sure acceptance condition is for the proposal to be *mode-approaching*. This is because $0 \leq k \leq 1/2$ implies
+$$2k-1 \leq 0 \Longrightarrow  -2k + 1 \geq 0 \Longrightarrow k^2s^2 -2k + 1 \geq 0,$$
+where the last inequality follows as both $k^2s^2 \geq 0$. Hence, 
+$$(x^2-y^2)(1-2k+k^2s^2) \geq 0 \Longleftrightarrow (x^2-y^2) \geq 0 \Longleftrightarrow |x|\geq|y|.$$
+
+But things aren't as simple once we move "beyond" MALA. To see why this is the case, let's consider the scale parameter of a given MH algorithm. 
+
+## Small and Large Scales beyond MALA
+
+Provided we are not doing RWM (i.e. $k$ strictly positive), another way to look at the second term of our sure acceptance condition is as a condition on the scale:
+$$1-2k+k^2s^2 > 0 \Longleftrightarrow s^2 > \dfrac{2k-1}{k^2}.$$
+This rightmost quotient is negative (or at most zero) in all cases "up to" MALA ($k=1/2$), providing us another way to see why for those algorithms mode-approaching proposals are always accepted. However, for $k>1/2$, then the quotient is positive and then we can find a set of scales where the sure acceptance property *is actually inverted*! 
+
+Beyond MALA, a *small scale* $s^2 \in \left(0,\dfrac{2k-1}{k^2}\right)$ makes the term $1-2k+k^2s^2$ negative so that
+$$(x^2-y^2)(1-2k+k^2s^2) \geq 0 \Longleftrightarrow (x^2-y^2) \leq 0 \Longleftrightarrow |x|\leq|y|,$$
+and *mode-receding* proposals are surely accepted whereas *mode-approaching* ones may be rejected. We only recover the more intuitive behavior if our proposal scale is *large* in the sense of $s^2 > \dfrac{2k-1}{k^2}$. 
+
+There is a final particular case: 
+$$s^2 = \dfrac{2k-1}{k^2} \Longrightarrow (x^2-y^2)(1-2k+k^2s^2) = 0 \Longrightarrow r(y|x) = 1$$
+If the scale is "just right", *all* proposals are always accepted. This doesn't mean the algorithm as a whole will be most efficient, we know that there is a trade-off between acceptance probabilities and size of jump, but it certainly helps us see that the Metropolis-Hastings algorithm hides beneath its elegant correction ratio expression some interesting and counterintuitive possible behaviors! 
