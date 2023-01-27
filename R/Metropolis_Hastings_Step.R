@@ -52,9 +52,10 @@
 #'   The suffix `_c2p` corresponds to transitions from the **c**urrent towards the **p**roposed state(s),
 #'   while the suffix `_p2c` contains the reversed transitions. If these values are ommited (the default),
 #'   the Hastings ratio becomes standard Metropolis.
-#' @param do_checks If TRUE (the default), runs some preliminary checks for arguments validity.
-#'    It may be set to FALSE if one is sure that the arguments are correct and doesn't want to incurr in
+#' @param do_checks If `TRUE` (the default), runs some preliminary checks for arguments validity.
+#'    It may be set to `FALSE` if one is sure that the arguments are correct and doesn't want to incurr in
 #'    slight overhead.
+#' @param full_return If `TRUE` (the default), the call returns its full set of results. See  `Value`.
 #'
 #' @returns A list containing the results of the Metropolis-Hastings step:
 #' * `x_next`:
@@ -68,15 +69,25 @@
 #' * `accepted`:
 #'    A vector specifying whether or not each of the proposals was accepted or rejected.
 #'    May be useful for acceptance rate monitoring.
+#' If `full_return` is `TRUE`, then the resulting list also contains the following:
+#' * `delta_l`: The MH log-ratio
+#' * The called parameters `x_curr`, `x_prop`, `l_curr`,`l_prop`,`lq_c2p`,`lq_p2c`.
 #'
 #' @export
 #'
-mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_checks = TRUE){
+mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0,
+                    do_checks = TRUE, full_return = TRUE){
 
 #--- Preparation and Checks -------------
 
   # Preparation
-  ret_list <- c("x_next", "l_next", "accepted")
+  if(full_return){
+    ret_list <- c("x_next", "l_next", "accepted", "delta_l",
+                  "x_curr", "x_prop", "l_curr", "l_prop", "lq_c2p", "lq_p2c")
+  }else{
+    ret_list <- c("x_next", "l_next", "accepted")
+  }
+
   C <- length(l_curr)
   x_is_matrix <- is.matrix(x_curr)
   d <- ifelse(x_is_matrix, ncol(x_curr),
@@ -164,7 +175,7 @@ mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0, do_c
 #'
 #' @export
 #'
-metropolis_step <- function(x_curr, x_prop, l_curr, l_prop, do_checks = TRUE){
+metropolis_step <- function(x_curr, x_prop, l_curr, l_prop, do_checks = TRUE, full_return = TRUE){
 
   mh_step(x_curr, x_prop, l_curr, l_prop, do_checks = do_checks)
 
@@ -190,7 +201,7 @@ metropolis_step <- function(x_curr, x_prop, l_curr, l_prop, do_checks = TRUE){
 #' @export
 #'
 mh_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args = NULL,
-                             lq_sampler = NULL, lq_sampler_args = NULL, do_checks = TRUE){
+                             lq_sampler = NULL, lq_sampler_args = NULL, do_checks = TRUE, full_return = TRUE){
 
   x_prop <- do.call(sampler, c(list(x_curr), sampler_args))
   l_prop <- do.call(l_target, c(list(x_prop), rlang::dots_list(...)))
@@ -214,7 +225,7 @@ mh_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sampler_arg
 #' @export
 #'
 metropolis_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args,
-                                     do_checks = TRUE){
+                                     do_checks = TRUE, full_return = TRUE){
 
   mh_sampling_step(x_curr, l_curr, l_target, ...,
                    sampler = sampler, sampler_args = sampler_args,
