@@ -295,8 +295,16 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
     return(x_prop)
   }
   lpsampler_q <- function(x, beta_max = beta_schedule[K], mode_info = HAT_info){
-    Sigmas_beta <- lapply(mode_info$Cov, function(Sigma) Sigma/beta_max)
-    lmix_mvtnorm(x,w = mode_info$w, mu = mode_info$modes, sigma = Sigmas_beta)
+    n_modes <- length(mode_info$w)
+    l_modes <- vapply(1:n_modes, function(m)
+      lmvtnorm_temp(x = x, beta = beta_max, mu = mode_info$modes[[m]],
+                    sigma_inv = mode_info$mH[[m]], logdet_sigma = 2*mode_info$half_l_detCov[[m]]) +
+        log(mode_info$w[[m]]), FUN.VALUE = 1.0)
+
+    indmax <- which.max(l_modes)   ##### Create a stable evaluation of the log density.
+    comb <- exp(l_modes[-indmax]-l_modes[indmax])
+    return( l_modes[indmax] + log(1+sum(comb)) )
+
   }
 
 
