@@ -78,3 +78,70 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
               acc = acc[-(1:burn)], acc_rate = acc_rate))
 
 }
+
+mh_sampler_chain <- function(l_target, ...,
+                             mh_sampler, other_sampler_args = NULL,
+                             lq_mh, other_lq_args = NULL,
+                             S = 1000, burn = 0, d = 1,
+                             x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
+                             target_names = NULL, silent = FALSE){
+
+  #--- Preparation -------------
+
+  # Checking for valid sample sizes
+  stopifnot(S >= 1)
+  stopifnot(0 <= burn && burn < S)
+
+  # Possibly set seed
+  if(!is.null(seed)){
+    set.seed(seed)
+  }
+
+  # Get starting point
+  if(is.null(x_0)){
+    stopifnot(is.numeric(x_0_u) && x_0_u > 0)
+    x_0 <- runif(d, min = -x_0_u, max = x_0_u)
+  }else{
+    stopifnot(is.numeric(x_0) && length(x_0) == d)
+  }
+
+  # Preallocate containers
+  x <- matrix(nrow = S + 1, ncol = d, dimnames = list(NULL, target_names))
+  l <- numeric(S + 1)
+  acc <- logical(S)
+
+  #--- Algorithm -------------
+
+  # Initialize
+  x[1, ] <- x_0
+  l[1] <- l_0 %||% l_target(x_0, ...)
+
+  # Run iterations
+  for(s in 1:S){
+    rwm_step <- mh_sampling_step(x_curr = x[s, ], l_curr = l[s],
+                                 l_target, ...,
+                                 sampler, sampler_args = other_sampler_args,
+                                 lq_sampler = lq_mh, lq_sampler_args = other_lq_args,
+                                 do_checks = FALSE)
+    x[s+1, ] <- rwm_step$x_next
+    l[s+1] <- rwm_step$l_next
+    acc[s] <- rwm_step$accepted
+  }
+
+  #--- Post processing and result -------------
+
+  acc_rate <- mean(acc)
+  if(!silent){
+    cat("Finished Sampling", sep = "\n")
+    cat(paste("Acceptance Rate:", round(acc_rate,3)), sep = "\n")
+  }
+
+  if(burn == 0){
+    return(list(x = x[-1, ], l = l[-1],
+                acc = acc, acc_rate = acc_rate))
+  }
+  burn_window <- 1:(burn+1)
+  return(list(x = x[-burn_window, ], l = l[-burn_window],
+              acc = acc[-(1:burn)], acc_rate = acc_rate))
+
+}
