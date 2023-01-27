@@ -5,18 +5,18 @@ quanta_transformation <- function(x, beta_1, beta_2, mode){
 
 attempt_quanta_1d <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
 
-    mod_1 <- modAssignment(x_1, beta_1, mode_info)$A
+    mod_1 <- modAssignment(x_1, beta_1, mode_info, assign_type = "euclidean")$A
     x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1]])
-    mod_quanta_1 <- modAssignment(x_quanta_1, beta_2, mode_info)$A
+    mod_quanta_1 <- modAssignment(x_quanta_1, beta_2, mode_info, assign_type = "euclidean")$A
 
     # Early exit if the transformation is not reversible
     if(mod_1 != mod_quanta_1){
         return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2), "l_next" = c(l_1, l_2), "x_next" = c(x_1, x_2)))
     }
 
-    mod_2 <- modAssignment(x_2, beta_2, mode_info)$A
+    mod_2 <- modAssignment(x_2, beta_2, mode_info, assign_type = "euclidean")$A
     x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2]])
-    mod_quanta_2 <- modAssignment(x_quanta_2, beta_1, mode_info)$A
+    mod_quanta_2 <- modAssignment(x_quanta_2, beta_1, mode_info, assign_type = "euclidean")$A
 
     # Early exit if the transformation is not reversible
     if(mod_2 != mod_quanta_2){
@@ -38,9 +38,9 @@ attempt_quanta_1d <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_t
 
 attempt_quanta_md <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
 
-  mod_1 <- modAssignment(x_1, beta_1, mode_info)$A
+  mod_1 <- modAssignment(x_1, beta_1, mode_info, assign_type = "euclidean")$A
   x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1]])
-  mod_quanta_1 <- modAssignment(x_quanta_1, beta_2, mode_info)$A
+  mod_quanta_1 <- modAssignment(x_quanta_1, beta_2, mode_info, assign_type = "euclidean")$A
 
   # Early exit if the transformation is not reversible
   if(mod_1 != mod_quanta_1){
@@ -48,9 +48,9 @@ attempt_quanta_md <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_t
                 "x_next" = matrix(c(x_1, x_2), nrow = 2, byrow = TRUE)))
   }
 
-  mod_2 <- modAssignment(x_2, beta_2, mode_info)$A
+  mod_2 <- modAssignment(x_2, beta_2, mode_info, assign_type = "euclidean")$A
   x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2]])
-  mod_quanta_2 <- modAssignment(x_quanta_2, beta_1, mode_info)$A
+  mod_quanta_2 <- modAssignment(x_quanta_2, beta_1, mode_info, assign_type = "euclidean")$A
 
   # Early exit if the transformation is not reversible
   if(mod_2 != mod_quanta_2){

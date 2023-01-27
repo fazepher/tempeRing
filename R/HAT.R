@@ -55,8 +55,8 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
   if(beta == 1){ return(l_eval) }
 
   # Assign the mode at beta and 1
-  mod_beta <- modAssignment(x, beta, HAT_info)
-  mod_1 <- modAssignment(x, 1, HAT_info)
+  mod_beta <- modAssignment_euclidean(x, beta, HAT_info)
+  mod_1 <- modAssignment_euclidean(x, 1, HAT_info)
   l_mod <- HAT_info$l_target_modes[ mod_beta$A ]
   if(is.na(mod_beta$lP_j) || is.na(mod_1$lP_j) || is.na(l_mod)){stop("Error")}
 
