@@ -1,5 +1,54 @@
 
-rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
+#' Random Walk Metropolis Chain
+#'
+#' Function for running a single chain using the Random Walk Metropolis algorithm for a user-specified target.
+#'
+#' Missing details for dimension and burn-in
+#' # RW Sampler
+#'
+#' Missing section explaining behavior of `scale` and default/custom samplers.
+#'
+#'
+#' @param l_target Function which returns the log-density of the target distribution (possibly up to a constant)
+#' and which accepts as first argument the state of the chain.
+#' @param ... (Optional) further arguments passed to `l_target`.
+#' @param scale Scale of the RWM proposal (see `RW Sampler`)
+#' @param S Number of samples of the chain, including burn-in but excluding starting state.
+#' @param burn (Default = 0) Number of burn-in iterations. By default, the starting state of the chain
+#' is always burned; if you would like to keep it, set this argument to -1 (see `Details`).
+#' @param x_0 (Optional) Starting state of the chain.
+#' @param x_0_u (Default = 2) If `x_0` is not specified, then the starting state of the chain is randomly sampled
+#' from a uniform distribution on (-`x_0_u`,`x_0_u`). If `x_0` is present, it is ignored.
+#' @param l_0 (Optional) Precomputed value of the log-density at `x_0`.
+#' @param seed (Optional) Seed for reproducibility of the algorithm passed on to `set.seed()`.
+#' @param custom_rw_sampler (Optional) User-specified Random Walk sampler function, must accept as its first two arguments
+#' the current state of the chain and `scale` (see `RW Sampler`).
+#' @param more_sampler_args (Optional) A list of further arguments passed on to `custom_rw_sampler`.
+#' @param d (Optional) Dimensionality of the problem (see `Details`).
+#' @param silent (Default = FALSE) Should the algorithm avoid printing messages?
+#'
+#' @return A list containing the results of the Random-Walk Metropolis Chain:
+#'
+#' * `x`:
+#'    A matrix whose rows contain the samples of the chain (after burn-in).
+#' * `l_x`:
+#'    A vector of log-densities of `x`.
+#' * `acc`:
+#'    A vector specifying whether or not each of the proposals was accepted or rejected.
+#' * `acc_rate`:
+#'    Acceptance rate of the chain.
+#' * `y`:
+#'    A matrix whose rows contain the proposals made during the chain (excluding burn-in).
+#' * `l_y`:
+#'    A vector of log-densities of `y`.
+#' * `delta_l`:
+#'    A vector of MH log-ratios.
+#'
+#' @export
+#'
+#' @examples
+rwm_sampler_chain <- function(l_target, ...,
+                              scale = 1, S = 1000, burn = 0,
                               x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                               custom_rw_sampler = NULL, more_sampler_args = NULL,
                               d = NULL, silent = FALSE){

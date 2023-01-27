@@ -70,7 +70,8 @@
 #'    A vector specifying whether or not each of the proposals was accepted or rejected.
 #'    May be useful for acceptance rate monitoring.
 #' If `full_return` is `TRUE`, then the resulting list also contains the following:
-#' * `delta_l`: The MH log-ratio
+#' * `delta_l`:
+#'    The MH log-ratio
 #' * The called parameters `x_curr`, `x_prop`, `l_curr`,`l_prop`,`lq_c2p`,`lq_p2c`.
 #'
 #' @export
