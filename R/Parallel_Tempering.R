@@ -1,7 +1,7 @@
 
 #' @export
 PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
-                         scale = 1, cycles = 1000, temp_moves = 5, within_moves = 5, burn_cycles = 0,
+                         scale = 1, cycles = 1000, temp_moves = 5, within_moves = 5,
                          x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                          quanta = FALSE, mode_info = NULL,
@@ -36,7 +36,6 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
   # Checking for valid sample sizes
   stopifnot(cycles >= 1)
-  stopifnot(-1 <= burn_cycles && burn_cycles < cycles)
   stopifnot(temp_moves >= 1)
   stopifnot(within_moves >= 1)
 
@@ -173,35 +172,12 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
     cat(paste("RWM Acceptance Rates:", round(rwm_acc_rates,3)), sep = "\n")
   }
 
-  if(burn_cycles == -1){
-    global_times[3] <- Sys.time()
-    return(list(x = x, l = l,
-                k_indexes = k_indexes[-(Cycles+1), , ],
-                beta_indexes = beta_indexes[-(Cycles+1), , ],
-                swap_acc = swap_acc, swap_acc_rates = swap_acc_rates,
-                rwm_acc = rwm_acc, rwm_acc_rates = rwm_acc_rates,
-                cycle_times = cycle_times, global_times = global_times))
-  }
-
-  x_r <- x[-seq(1,burn_cycles*cycle_length + 1), , , drop = FALSE]
-  l_r <- l[-seq(1,burn_cycles*cycle_length + 1), ]
-
-  if(burn_cycles == 0){
-    rwm_acc_r <- rwm_acc
-    swap_acc_r <- swap_acc
-    b_r <- beta_indexes[-c(1,Cycles+1), , ]
-    k_r <- k_indexes[-c(1,Cycles+1), , ]
-  }else{
-    rwm_acc_r <- rwm_acc[-seq(1,burn_cycles), , ]
-    swap_acc_r <- swap_acc[-seq(1,burn_cycles), ]
-    b_r <- beta_indexes[-c(seq(1,burn_cycles),Cycles + 1), , ]
-    k_r <- k_indexes[-c(seq(1,burn_cycles),Cycles + 1), , ]
-  }
-
   global_times[3] <- Sys.time()
-  return(list(x = x_r, l = l_r, k_indexes = k_r, beta_indexes = b_r,
-              swap_acc = swap_acc_r, swap_acc_rates = swap_acc_rates,
-              rwm_acc = rwm_acc_r, rwm_acc_rates = rwm_acc_rates,
+  return(list(x = x, l = l,
+              k_indexes = k_indexes[-(cycles+1), , ],
+              beta_indexes = beta_indexes[-(cycles+1), , ],
+              swap_acc = swap_acc, swap_acc_rates = swap_acc_rates,
+              rwm_acc = rwm_acc, rwm_acc_rates = rwm_acc_rates,
               cycle_times = cycle_times, global_times = global_times))
 
 }
