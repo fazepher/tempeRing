@@ -16,11 +16,10 @@ get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
 
   l_target_modes <- vapply(modes, l_target, numeric(1), beta = 1, ...)
 
-  if(optimize){
-    mH <- lapply(optimizations, function(o) -o$hessian)
-  }else{
-    mH <- lapply(modes, function(m) -(numDeriv::hessian(l_target, m, ...)))
-  }
+  # Necesitamos volver a calcular la Hessiana porque numDeriv parece ser más estable numéricamente
+  mH <- lapply(modes, function(m) -(numDeriv::hessian(l_target, m, ...)))
+  cholCov_inv <- lapply(mH, chol)
+  hldetCov_inv <- vapply(cholCov_inv, function(chS) sum(log(diag(chS))), numeric(1))
   Cov <- lapply(mH,solve)
   cholCov <- lapply(Cov,chol)
   half_l_detCov <- vapply(cholCov, function(chS) sum(log(diag(chS))), numeric(1))
@@ -30,15 +29,22 @@ get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
   ls_w_tilde <- matrixStats::logSumExp(l_w_tilde)
   w <- exp(l_w_tilde-ls_w_tilde)
 
-  return(mget(c("mH","Cov","cholCov","half_l_detCov","detCov","l_target_modes","w","modes")))
+  return(mget(c("mH","cholCov_inv","hldetCov_inv",
+                "Cov","cholCov","half_l_detCov","detCov",
+                "l_target_modes","w","modes")))
 
 }
 
+modAssignment <- function(x, beta, HAT_info, assign_type){
+  if(assign_type == "euclidean"){
+    modAssignment_euclidean(x, beta, HAT_info)
+  }
+}
 
-modAssignment <- function(x, beta, HAT_info){
+modAssignment_euclidean <- function(x, beta, HAT_info){
 
-  lP_vec <-mapply(function(mu,w,Cov) log(w) + lmvtnorm(x, mu, Cov/beta),
-                  mu = HAT_info$modes, w = HAT_info$w, Cov = HAT_info$Cov)
+  lP_vec <-mapply(function(mu,w,Cov_inv, hlds) log(w) + beta*lmvtnorm(x, mu, sigma_inv = Cov_inv, logdet_sigma = 2*hlds),
+                  mu = HAT_info$modes, w = HAT_info$w, Cov_inv = HAT_info$mH, hlds = HAT_info$hldetCov_inv)
   A <- which.max(lP_vec)
 
   return(list("A" = A[1], "lP_j" = lP_vec[A[1]]))
@@ -68,7 +74,7 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
   ## G Weight Preservation only when the assigned modes differ
   l_corr_ctes <- 0.5*length(HAT_info$modes[[1]])*(log(2*pi) - log(beta))
   l_approx_w <- mod_beta$lP_j - log(HAT_info$w[mod_beta$A])
-  l_G <- l_mod + l_corr_ctes + HAT_info$half_l_detCov[mod_beta$A] + l_approx_w
+  l_G <- l_mod + l_corr_ctes + 1/HAT_info$hldetCov_inv[mod_beta$A] + l_approx_w
   return(l_G)
 
 }
