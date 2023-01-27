@@ -18,7 +18,7 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
 
   # Checking for valid sample sizes
   stopifnot(S >= 1)
-  stopifnot(0 <= burn && burn < S)
+  stopifnot(-1 <= burn && burn < S)
 
   # If the user didn't, we define the proposal sampler as indep. normals
   sampler <- custom_rw_sampler %||%
@@ -75,15 +75,21 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
     cat(paste("Acceptance Rate:", round(acc_rate,3)), sep = "\n")
   }
 
+  if(burn == -1){
+    return(mget(c("x", "l_x", "acc", "acc_rate", "y", "l_y", "delta_l")))
+  }
+
   if(burn == 0){
     return(list(x = x[-1, ], l_x = l_x[-1],
                 acc = acc, acc_rate = acc_rate,
-                y = y[-1, ], l_y = l_y[-1], delta_l = delta_l[-1]))
+                y = y, l_y = l_y, delta_l = delta_l))
   }
-  burn_window <- 1:(burn+1)
-  return(list(x = x[-burn_window, ], l_x = l_x[-burn_window],
-              acc = acc[-(1:burn)], acc_rate = acc_rate,
-              y = y[-(1:burn), ], l_y = l_y[-(1:burn)], delta_l = delta_l[-(1:burn)]))
+
+  bwx <- 1:(burn+1)
+  bwy <- 1:burn
+  return(list(x = x[-bwx, ], l_x = l_x[-bwx],
+              acc = acc[-bwy], acc_rate = acc_rate,
+              y = y[-bwy, ], l_y = l_y[-bwy], delta_l = delta_l[-bwy]))
 
 }
 
