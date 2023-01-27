@@ -2,7 +2,7 @@
 rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
                               x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                               custom_rw_sampler = NULL, more_sampler_args = NULL,
-                              target_names = NULL, d = NULL, silent = FALSE){
+                              d = NULL, silent = FALSE){
 
 #--- Preparation -------------
 
@@ -40,7 +40,7 @@ rwm_sampler_chain <- function(l_target, ..., scale = 1, S = 1000, burn = 0,
   }
 
   # Preallocate containers
-  x <- matrix(nrow = S + 1, ncol = d, dimnames = list(NULL, target_names))
+  x <- matrix(nrow = S + 1, ncol = d)
   l <- numeric(S + 1)
   acc <- logical(S)
 
@@ -106,7 +106,7 @@ mh_sampler_chain <- function(l_target, ...,
   }
 
   # Preallocate containers
-  x <- matrix(nrow = S + 1, ncol = d, dimnames = list(NULL, target_names))
+  x <- matrix(nrow = S + 1, ncol = d)
   l <- numeric(S + 1)
   acc <- logical(S)
 
