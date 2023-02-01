@@ -457,7 +457,7 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
 
       rwm_acc[c, , k] <- rwm_moves$acc
       x[i + 1:Within_Moves, k_i, ] <- rwm_moves$x
-      l[i + 1:Within_Moves, k_i] <- rwm_moves$l
+      l[i + 1:Within_Moves, k_i] <- rwm_moves$l_x
 
     }
     # Leap Sampler at Coldest Level
@@ -489,7 +489,7 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
 
       rwm_acc[c, , K] <- rwm_moves$acc
       x[i + 1:Within_Moves, k_i, ] <- rwm_moves$x
-      l[i + 1:Within_Moves, k_i] <- rwm_moves$l
+      l[i + 1:Within_Moves, k_i] <- rwm_moves$l_x
     }
 
 
