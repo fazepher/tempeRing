@@ -386,7 +386,10 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
   cycle_length <- Temp_Moves + Within_Moves
   S_Tot <- Cycles*(cycle_length)
   x <- array(dim = c(S_Tot + 1, K, d), dimnames = list(NULL, NULL, target_names))
-  l <- matrix(nrow = S_Tot + 1, ncol = K)
+  l_x <- matrix(nrow = S_Tot + 1, ncol = K)
+  y <- array(dim = c(S_Tot, K, d), dimnames = list(NULL, NULL, target_names))
+  l_y <- matrix(nrow = S_Tot, ncol = K)
+  delta_l <- matrix(nrow = S_Tot, ncol = K)
   k_indexes <- array(dim = c(Cycles + 1, Temp_Moves + 1, K))
   beta_indexes <- array(dim = c(Cycles + 1, Temp_Moves + 1, K))
   swap_acc <- array(-1, dim = c(Cycles, Temp_Moves, K))
@@ -399,7 +402,10 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
   k_indexes[1, 1, ] <- 1:K
   beta_indexes[1, 1, ] <- beta_schedule
   x[1, , ] <- x_0
-  l[1, ] <- l_0
+  l_x[1, ] <- l_0
+
+  # Determine LPS cycles at coldest level
+  u_lps <- runif(Cycles) <= jump_p
 
   # Run iterations
   for(c in 1:Cycles){
@@ -421,7 +427,7 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                              beta_curr = beta_indexes[c, j, ],
                              k_curr = k_indexes[c, j,  ],
                              x_curr = x[(i-2)+j, , , drop = FALSE],
-                             l_curr = l[(i-2)+j, ],
+                             l_curr = l_x[(i-2)+j, ],
                              l_target, target_args,
                              K = K,
                              odd_indices = odd_indices,
@@ -434,7 +440,7 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
       beta_indexes[c, j+1, ] <- swap_move$beta_next
 
       x[(i-1) + j, , ] <- swap_move$x_next
-      l[(i-1) + j, ] <- swap_move$l_next
+      l_x[(i-1) + j, ] <- swap_move$l_next
 
     }
 
@@ -442,13 +448,16 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
 
     # Update current cycle position index
     i <- i + Temp_Moves - 1
+    within_window_next <- i + 1:Within_Moves
+    within_window_prop <- within_window_next - 1
+
     # Random Walk Metropolis
     for(k in 1:(K-1)){
 
       k_i <- which(k_indexes[c, Temp_Moves + 1, ] == k)
 
       rwm_level_args <- list(x_0 = x[i, k_i , ],
-                             l_0 = l[i, k_i],
+                             l_0 = l_x[i, k_i],
                              beta = beta_schedule[k],
                              custom_rw_sampler = sampler_list[[k]],
                              scale = scale_list[[k]],
@@ -456,16 +465,20 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
       rwm_moves <- do.call(rwm_sampler_chain, c(rwm_level_args, l_target, target_args))
 
       rwm_acc[c, , k] <- rwm_moves$acc
-      x[i + 1:Within_Moves, k_i, ] <- rwm_moves$x
-      l[i + 1:Within_Moves, k_i] <- rwm_moves$l_x
+      x[within_window_next, k_i, ] <- rwm_moves$x
+      l_x[within_window_next, k_i] <- rwm_moves$l_x
+      y[within_window_prop, k_i, ] <- rwm_moves$y
+      l_y[within_window_prop, k_i] <- rwm_moves$l_y
+      delta_l[within_window_prop, k_i] <- rwm_moves$delta_l
 
     }
     # Leap Sampler at Coldest Level
     k_i <- which(k_indexes[c, Temp_Moves + 1, ] == K)
-    if(runif(1) <= jump_p){
+    if(u_lps[c]){
+
       for(s in 1:Within_Moves){
         x_curr_lps <- x[i+s-1, k_i , ]
-        l_curr_lps <- l[i+s-1, k_i]
+        l_curr_lps <- l_x[i+s-1, k_i]
         x_prop_lps <- lpsampler(x_curr = x_curr_lps)
         l_prop_lps <- do.call(l_target, c(list(x = x_prop_lps, beta = beta_schedule[K]), target_args))
         lsaq_c2p <- lpsampler_q(x = x_prop_lps)
@@ -474,13 +487,21 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                             l_curr = l_curr_lps, l_prop = l_prop_lps,
                             lq_c2p = lsaq_c2p, lq_p2c = lsaq_p2c,
                             do_checks = FALSE)
-        x[i+s, k_i, ] <- lsa_step$x_next
-        l[i+s, k_i] <- lsa_step$l_next
+
         rwm_acc[c, s, K] <- lsa_step$accepted
+        ww_n <- i + s
+        ww_p <- ww_n - 1
+        x[ww_n, k_i, ] <- lsa_step$x_next
+        l_x[ww_n, k_i] <- lsa_step$l_next
+        y[ww_p, k_i, ] <- lsa_step$x_prop
+        l_y[ww_p, k_i] <- lsa_step$l_prop
+        delta_l[ww_p, k_i] <- lsa_step$delta_l
       }
+
     }else{
+
       rwm_level_args <- list(x_0 = x[i, k_i , ],
-                             l_0 = l[i, k_i],
+                             l_0 = l_x[i, k_i],
                              beta = beta_schedule[K],
                              custom_rw_sampler = sampler_list[[K]],
                              scale = scale_list[[K]],
@@ -488,8 +509,12 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
       rwm_moves <- do.call(rwm_sampler_chain, c(rwm_level_args, l_target, target_args))
 
       rwm_acc[c, , K] <- rwm_moves$acc
-      x[i + 1:Within_Moves, k_i, ] <- rwm_moves$x
-      l[i + 1:Within_Moves, k_i] <- rwm_moves$l_x
+      x[within_window_next, k_i, ] <- rwm_moves$x
+      l_x[within_window_next, k_i] <- rwm_moves$l_x
+      y[within_window_prop, k_i, ] <- rwm_moves$y
+      l_y[within_window_prop, k_i] <- rwm_moves$l_y
+      delta_l[within_window_prop, k_i] <- rwm_moves$delta_l
+
     }
 
 
@@ -513,7 +538,7 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
 
   if(burn_cycles == -1){
     global_times[3] <- Sys.time()
-    return(list(x = x, l = l,
+    return(list(x = x, l_x = l_x, y = y, l_y = l_y, delta_l = delta_l, u_lps = u_lps,
                 k_indexes = k_indexes[-(Cycles+1), , ],
                 beta_indexes = beta_indexes[-(Cycles+1), , ],
                 swap_acc = swap_acc, swap_acc_rates = swap_acc_rates,
@@ -521,8 +546,13 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                 cycle_times = cycle_times, global_times = global_times))
   }
 
-  x_r <- x[-seq(1,burn_cycles*cycle_length + 1), , , drop = FALSE]
-  l_r <- l[-seq(1,burn_cycles*cycle_length + 1), ]
+  burn_window <- seq(1,burn_cycles*cycle_length + 1)
+  x_r <- x[-burn_window, , , drop = FALSE]
+  l_x_r <- l_x[-burn_window, ]
+  y_r <- y[-burn_window, , , drop = FALSE]
+  l_y_r <- l_y[-burn_window, ]
+  delta_l_r <- delta_l[-burn_window, ]
+  u_lps_r <- u_lps[-burn_window, ]
 
   if(burn_cycles == 0){
     rwm_acc_r <- rwm_acc
@@ -530,14 +560,16 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
     b_r <- beta_indexes[-c(1,Cycles+1), , ]
     k_r <- k_indexes[-c(1,Cycles+1), , ]
   }else{
-    rwm_acc_r <- rwm_acc[-seq(1,burn_cycles), , ]
-    swap_acc_r <- swap_acc[-seq(1,burn_cycles), ]
-    b_r <- beta_indexes[-c(seq(1,burn_cycles),Cycles + 1), , ]
-    k_r <- k_indexes[-c(seq(1,burn_cycles),Cycles + 1), , ]
+    burn_window <- 1:burn_cycles
+    rwm_acc_r <- rwm_acc[-burn_window, , ]
+    swap_acc_r <- swap_acc[-burn_window, ]
+    b_r <- beta_indexes[-c(burn_window,Cycles + 1), , ]
+    k_r <- k_indexes[-c(burn_window,Cycles + 1), , ]
   }
 
   global_times[3] <- Sys.time()
-  return(list(x = x_r, l = l_r, k_indexes = k_r, beta_indexes = b_r,
+  return(list(x = x_r, l_x = l_x_r, y = y_r, l_y = l_y_r, delta_l = delta_l_r, u_lps = u_lps_r,
+              k_indexes = k_r, beta_indexes = b_r,
               swap_acc = swap_acc_r, swap_acc_rates = swap_acc_rates,
               rwm_acc = rwm_acc_r, rwm_acc_rates = rwm_acc_rates,
               cycle_times = cycle_times, global_times = global_times))
