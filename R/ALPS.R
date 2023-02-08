@@ -272,7 +272,6 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
     l_target <- lHAT_target
     target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
                      rlang::dots_list(...))
-    print(target_args)
   }else{
     l_target <- ltemp_target
     target_args <- rlang::dots_list(...)
@@ -379,7 +378,6 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
       temporal <- do.call(l_target, c(list(x = x_0[k, ], beta = beta_schedule[k]), target_args))
       l_0[k] <- temporal
     }
-    print(l_0)
   }
 
   # Preallocate containers
@@ -411,7 +409,7 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
   for(c in 1:Cycles){
 
     cycle_times[c] <- Sys.time()
-    if(isTRUE(c %% floor(Cycles*0.05) == 0)){
+    if(!silent & isTRUE(c %% floor(Cycles*0.05) == 0)){
       cat(paste0("Avance: ",round(100*c/Cycles),"%"),sep = "\n")
       print(Sys.time())
     }
