@@ -19,7 +19,7 @@ LazyData: true
 URL: https://github.com/fazepher/tempeRing,
     https://fazepher.github.io/tempeRing/
 BugReports: https://github.com/fazepher/tempeRing/issues
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 Roxygen: list(markdown = TRUE)
 Suggests: 
     ggplot2,
