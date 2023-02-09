@@ -64,7 +64,7 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
   # Checking for valid sample sizes
   stopifnot(Temp_Moves >= 1)
   stopifnot(Within_Moves >= 1)
-  stopifnot(0 <= burn_cycles && burn_cycles < Temp_Moves)
+  stopifnot(-1 <= burn_cycles && burn_cycles < Temp_Moves)
 
   # If the user didn't we define proposal sampler(s) as indep. normals
   if(is.list(custom_rw_sampler)){
@@ -155,6 +155,10 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
     cat("Finished Sampling", sep = "\n")
     cat(paste("Swap Acceptance Rates:", round(swap_acc_rates,3)), sep = "\n")
     cat(paste("RWM Acceptance Rates:", round(rwm_acc_rates,3)), sep = "\n")
+  }
+
+  if(burn_cycles == -1){
+    return(mget(c("x", "k", "l", "swap_acc", "swap_acc_rates", "rwm_acc", "rwm_acc_rates")))
   }
 
   x_r <- x[-seq(1,burn_cycles*cycle_length + 1), ]
