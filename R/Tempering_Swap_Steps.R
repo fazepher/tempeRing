@@ -217,7 +217,6 @@ quanta_move <- function(type, j_deo, mode_info,
         b_1 <- even_indices
       }
     }
-
   }
   b_2 <- b_1 + 1
 
@@ -266,14 +265,14 @@ temp_swap_move <- function(type = "naive", j_deo = NULL, quanta = FALSE, mode_in
 
   # QuanTA Swapping
   if(quanta){
-    quanta_move(type, j_deo, mode_info,
-                x_curr, beta_curr, k_curr, l_curr, l_target, ...,
-                K = K, odd_indices = odd_indices, even_indices = even_indices, d = d)
+    return(quanta_move(type, j_deo, mode_info,
+                       x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                       K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
   }
   # Regular PT Swapping
-  swap_move(type, j_deo,
-            x_curr, beta_curr, k_curr, l_curr, l_target, ...,
-            K = K, odd_indices = odd_indices, even_indices = even_indices, d = d)
+  return(swap_move(type, j_deo,
+                   x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                   K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
 
 }
 
@@ -289,7 +288,6 @@ alps_swap_move <- function(type = "naive", j_deo = NULL, quanta_levels = NULL, m
   }
 
   #--- Preparation -------------
-
   K <- K %||% length(k_curr)
   stopifnot(K >= 3)
   d <- d %||% ncol(x_curr)
@@ -386,7 +384,6 @@ alps_swap_move <- function(type = "naive", j_deo = NULL, quanta_levels = NULL, m
     if(nswap$acc){
       k_next[m] <- b
     }
-
   }
 
   return(mget(c("x_next","acc","k_next","beta_next","l_next","x_prop","l_prop")))
