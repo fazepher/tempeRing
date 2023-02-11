@@ -1,4 +1,5 @@
 
+# ST Swap Step
 st_temp_step <- function(k_curr, x_curr, l_curr, l_target, ...,
                          beta_schedule, g_schedule = NULL, K = NULL){
 
@@ -26,6 +27,8 @@ st_temp_step <- function(k_curr, x_curr, l_curr, l_target, ...,
 
 }
 
+# PT/QuanTA Auxiliary functions
+
 attempt_swap <- function(x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
 
   swaped_l <- c(do.call(l_target,c(list(x = x_1, beta = beta_2), ...)),
@@ -33,87 +36,58 @@ attempt_swap <- function(x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
   delta_l <- sum(swaped_l) - (l_1 + l_2)
 
   if(delta_l > 0 || log(runif(1)) <= delta_l){
-    return(list("acc" = TRUE, "beta_next" = c(beta_2, beta_1), "l_next" = swaped_l))
+    return(list("acc" = TRUE, "beta_next" = c(beta_2, beta_1), "l_prop" = swaped_l, "l_next" = swaped_l))
   }
-  return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2), "l_next" = c(l_1, l_2)))
+  return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2), "l_prop" = swaped_l, "l_next" = c(l_1, l_2)))
 
 }
 
-naive_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K = NULL, d = NULL){
+swap_move <- function(type, j_deo,
+                      x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                      K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
 
   K <- K %||% length(k_curr)
   stopifnot(K >= 3)
   d <- d %||% ncol(x_curr)
 
-  acc <- rep(-1,K)
+  acc <- rep(-1, K)
   x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
   l_next <- l_curr
+  x_prop <- x_curr
+  l_prop <- l_curr
 
-  # Choose with replacement which indexes we attempt to swap
-  b_1 <- sample(1:(K-1), 1)
-  b_2 <- b_1 + 1
-
-  # We get which "machines" have the beta indexes
-  m_1 <- which(k_next == b_1)
-  m_2 <- which(k_next == b_2)
-  if(d == 1){
-    nswap <- attempt_swap(x_next[m_1], x_next[m_2],
-                          beta_next[m_1], beta_next[m_2],
-                          l_next[m_1], l_next[m_2],
-                          l_target, ...)
+  stopifnot(type %in% c("naive","seo","deo"))
+  if(type == "naive"){
+    # Choose the single pair to swap
+    b_1 <- sample(1:(K-1),1)
   }else{
-    nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
-                          beta_next[m_1], beta_next[m_2],
-                          l_next[m_1], l_next[m_2],
-                          l_target, ...)
-  }
-  m <- c(m_1, m_2)
-  b <- c(b_2, b_1)
-  beta_next[m] <- nswap$beta_next
-  l_next[m] <- nswap$l_next
-  acc[b] <- nswap$acc
-  if(nswap$acc){
-    k_next[m] <- b
-  }
 
-  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
+    # Even/Odd indices
+    even_indices <- even_indices %||% seq(2, K, by = 2)
+    odd_indices <- odd_indices %||% seq(1, K, by = 2)
+    if(K %% 2 != 0){
+      odd_indices <- odd_indices[-(K+1)/2]
+    } else{
+      even_indices <- even_indices[-K/2]
+    }
 
-}
+    # SEO chooses at random, DEO chooses deterministically
+    if(type == "seo"){
+      b_1 <- ifelse(runif(1) <= 0.5, odd_indices, even_indices)
+    }else{
+      b_1 <- ifelse(j_deo %% 2 == 1, odd_indices, even_indices)
+    }
 
-seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
-                          K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
-
-
-  K <- K %||% length(k_curr)
-  stopifnot(K >= 3)
-  d <- d %||% ncol(x_curr)
-  odd_indices <- odd_indices %||% seq(1, K, by = 2)
-  even_indices <- even_indices %||% seq(2, K, by = 2)
-  if(K %% 2 != 0){
-    odd_indices <- odd_indices[-(K+1)/2]
-  } else{
-    even_indices <- even_indices[-K/2]
-  }
-  acc <- rep(-1,K)
-  x_next <- x_curr
-  k_next <- k_curr
-  beta_next <- beta_curr
-  l_next <- l_curr
-
-  # Choose whether to swap odd or even indices with equal probability
-  if(runif(1) <= 0.5){
-    b_1 <- odd_indices
-  } else{
-    b_1 <- even_indices
   }
   b_2 <- b_1 + 1
 
   for(i in seq_along(b_1)){
     # We get which "machines" have the beta indexes
-    m_1 <- which(k_next == b_1[i])
-    m_2 <- which(k_next == b_2[i])
+    m_1 <- which(k_next == b_1)
+    m_2 <- which(k_next == b_2)
+    m <- c(m_1, m_2)
     if(d == 1){
       nswap <- attempt_swap(x_next[m_1], x_next[m_2],
                             beta_next[m_1], beta_next[m_2],
@@ -125,9 +99,10 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                             l_next[m_1], l_next[m_2],
                             l_target, ...)
     }
-    m <- c(m_1, m_2)
-    b <- c(b_2[i], b_1[i])
+    b <- c(b_2, b_1)
     beta_next[m] <- nswap$beta_next
+    x_prop[m] <- nswap$x_prop
+    l_prop[m] <- nswap$l_prop
     l_next[m] <- nswap$l_next
     acc[b] <- nswap$acc
     if(nswap$acc){
@@ -135,100 +110,260 @@ seo_swap_move <- function(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
     }
   }
 
-  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
+  return(mget(c("x_next","acc","k_next","beta_next","l_next","x_prop","l_prop")))
 
 }
 
-deo_swap_move <- function(x_curr, j_deo, beta_curr, k_curr, l_curr, l_target, ...,
-                          K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
+quanta_transformation <- function(x, beta_1, beta_2, mode){
+  sqrt(beta_1/beta_2)*(x - mode) + mode
+}
 
-  stopifnot(j_deo >= 1)
+attempt_quanta <- function(mode_info,
+                           x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...,
+                           unidimensional = TRUE){
+
+
+  x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1]])
+  x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2]])
+  swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2), ...)),
+                do.call(l_target,c(list(x = x_quanta_2, beta = beta_1), ...)))
+
+  if(unidimensional){
+    x_curr <- c(x_1, x_2)
+    x_prop <- c(x_quanta_1, x_quanta_2)
+  }else{
+    x_curr <- matrix(c(x_1, x_2), nrow = 2, byrow = TRUE)
+    x_prop <- matrix(c(x_quanta_1, x_quanta_2), nrow = 2, byrow = TRUE)
+  }
+  rej_list <- list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+                   "l_next" = c(l_1, l_2), "x_next" = x_curr,
+                   "l_prop" = swaped_l, "x_prop" = x_prop)
+
+
+  mod_1 <- modAssignment(x_1, beta_1, mode_info, assign_type = "euclidean")$A
+  mod_quanta_1 <- modAssignment(x_quanta_1, beta_2, mode_info, assign_type = "euclidean")$A
+  # Early exit if the transformation is not reversible
+  if(mod_1 != mod_quanta_1){
+    return(rej_list)
+  }
+
+  mod_2 <- modAssignment(x_2, beta_2, mode_info, assign_type = "euclidean")$A
+  mod_quanta_2 <- modAssignment(x_quanta_2, beta_1, mode_info, assign_type = "euclidean")$A
+  # Early exit if the transformation is not reversible
+  if(mod_2 != mod_quanta_2){
+    return(rej_list)
+  }
+
+  delta_l <- sum(swaped_l) - (l_1 + l_2)
+
+  if(delta_l > 0 || log(runif(1)) <= delta_l){
+    return(list("acc" = TRUE, "beta_next" = c(beta_2, beta_1),
+                "l_next" = swaped_l, "x_next" = x_prop,
+                "l_prop" = swaped_l, "x_prop" = x_prop))
+  }
+  return(rej_list)
+
+}
+
+quanta_move <- function(type, j_deo, mode_info,
+                        x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                        K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
+
   K <- K %||% length(k_curr)
   stopifnot(K >= 3)
   d <- d %||% ncol(x_curr)
-  odd_indices <- odd_indices %||% seq(1, K, by = 2)
-  even_indices <- even_indices %||% seq(2, K, by = 2)
-  if(K %% 2 != 0){
-    odd_indices <- odd_indices[-(K+1)/2]
-  } else{
-    even_indices <- even_indices[-K/2]
-  }
-  acc <- rep(-1,K)
+
+  acc <- rep(-1, K)
   x_next <- x_curr
   k_next <- k_curr
   beta_next <- beta_curr
   l_next <- l_curr
+  x_prop <- x_curr
+  l_prop <- l_curr
 
-  # Choose whether to swap odd or even indices deterministically based on c
-  if(j_deo %% 2 == 1){
-    b_1 <- odd_indices
-  } else{
-    b_1 <- even_indices
+  stopifnot(type %in% c("naive","seo","deo"))
+  if(type == "naive"){
+    # Choose the single pair to swap
+    b_1 <- sample(1:(K-1),1)
+  }else{
+
+    # Even/Odd indices
+    even_indices <- even_indices %||% seq(2, K, by = 2)
+    odd_indices <- odd_indices %||% seq(1, K, by = 2)
+    if(K %% 2 != 0){
+      odd_indices <- odd_indices[-(K+1)/2]
+    } else{
+      even_indices <- even_indices[-K/2]
+    }
+
+    # SEO chooses at random, DEO chooses deterministically
+    if(type == "seo"){
+      b_1 <- ifelse(runif(1) <= 0.5, odd_indices, even_indices)
+    }else{
+      b_1 <- ifelse(j_deo %% 2 == 1, odd_indices, even_indices)
+    }
+
   }
   b_2 <- b_1 + 1
 
   for(i in seq_along(b_1)){
     # We get which "machines" have the beta indexes
-    m_1 <- which(k_next == b_1[i])
-    m_2 <- which(k_next == b_2[i])
-    if(d == 1){
-      nswap <- attempt_swap(x_next[m_1], x_next[m_2],
-                            beta_next[m_1], beta_next[m_2],
-                            l_next[m_1], l_next[m_2],
-                            l_target, ...)
-    }else{
-      nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
-                            beta_next[m_1], beta_next[m_2],
-                            l_next[m_1], l_next[m_2],
-                            l_target, ...)
-    }
+    m_1 <- which(k_next == b_1)
+    m_2 <- which(k_next == b_2)
     m <- c(m_1, m_2)
-    b <- c(b_2[i], b_1[i])
+    if(d == 1){
+      nswap <- attempt_quanta(mode_info,
+                              x_next[m_1], x_next[m_2],
+                              beta_next[m_1], beta_next[m_2],
+                              l_next[m_1], l_next[m_2],
+                              l_target, ...,
+                              unidimensional = TRUE)
+      x_next[m] <- nswap$x_next
+    }else{
+      nswap <- attempt_quanta(mode_info,
+                              x_next[m_1], x_next[m_2],
+                              beta_next[m_1], beta_next[m_2],
+                              l_next[m_1], l_next[m_2],
+                              l_target, ...,
+                              unidimensional = FALSE)
+      x_next[1, m, ] <- nswap$x_next
+    }
+    b <- c(b_2, b_1)
     beta_next[m] <- nswap$beta_next
+    x_prop[m] <- nswap$x_prop
+    l_prop[m] <- nswap$l_prop
     l_next[m] <- nswap$l_next
     acc[b] <- nswap$acc
     if(nswap$acc){
       k_next[m] <- b
-      acc[b] <- TRUE
     }
   }
 
-  return(mget(c("x_next","acc","k_next","beta_next","l_next")))
+  return(mget(c("x_next","acc","k_next","beta_next","l_next","x_prop","l_prop")))
 
 }
 
-#' @export
-temp_swap_move <- function(type = "deo", j_deo = NULL, quanta = FALSE, mode_info = NULL,
+# Main Swap functions
+temp_swap_move <- function(type = "naive", j_deo = NULL, quanta = FALSE, mode_info = NULL,
                            x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                            K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
 
-  # Regular PT Swapping
-  if(type == "deo" && !quanta){
-    return(deo_swap_move(x_curr, j_deo, beta_curr, k_curr, l_curr, l_target, ...,
-                         K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
-  }
-  if(type == "seo" && !quanta){
-    return(seo_swap_move(x_curr, beta_curr, k_curr, l_curr, l_target, ...,
-                         K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
-  }
-  if(type == "naive" && !quanta){
-    return(naive_swap_move(x_curr, beta_curr, k_curr, l_curr, l_target, ..., K = K, d = d))
-  }
-
   # QuanTA Swapping
-  if(type == "deo"){
-    return(deo_quanta_move(mode_info, j_deo, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
-                           K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
+  if(quanta){
+    quanta_move(type, j_deo, mode_info,
+                x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                K = K, odd_indices = odd_indices, even_indices = even_indices, d = d)
   }
-  if(type == "seo"){
-    return(seo_quanta_move(mode_info, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
-                           K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
-  }
-  if(type == "naive"){
-    return(naive_quanta_move(mode_info, x_curr, beta_curr, k_curr, l_curr, l_target, ...,
-                             K = K, d = d))
+  # Regular PT Swapping
+  swap_move(type, j_deo,
+            x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+            K = K, odd_indices = odd_indices, even_indices = even_indices, d = d)
+
+}
+
+alps_swap_move <- function(type = "naive", j_deo = NULL, quanta_levels = NULL, mode_info = NULL,
+                           x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                           K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
+
+  #--- Early return of Regular PT swapping when quanta_levels is NULL -------------
+  if(is.null(quanta_levels)){
+    return(swap_move(type, j_deo,
+                     x_curr, beta_curr, k_curr, l_curr, l_target, ...,
+                     K = K, odd_indices = odd_indices, even_indices = even_indices, d = d))
   }
 
-  stop("Only recognized types of swap are: 'deo', 'seo' and 'naive'.")
+  #--- Preparation -------------
+
+  K <- K %||% length(k_curr)
+  stopifnot(K >= 3)
+  d <- d %||% ncol(x_curr)
+
+  acc <- rep(-1, K)
+  x_next <- x_curr
+  k_next <- k_curr
+  beta_next <- beta_curr
+  l_next <- l_curr
+  x_prop <- x_curr
+  l_prop <- l_curr
+
+  #--- Move Scheme -------------
+  stopifnot(type %in% c("naive","seo","deo"))
+  if(type == "naive"){
+    # Choose the single pair to swap
+    b_1 <- sample(1:(K-1),1)
+  }else{
+
+    # Even/Odd indices
+    even_indices <- even_indices %||% seq(2, K, by = 2)
+    odd_indices <- odd_indices %||% seq(1, K, by = 2)
+    if(K %% 2 != 0){
+      odd_indices <- odd_indices[-(K+1)/2]
+    } else{
+      even_indices <- even_indices[-K/2]
+    }
+
+    # SEO chooses at random, DEO chooses deterministically
+    if(type == "seo"){
+      b_1 <- ifelse(runif(1) <= 0.5, odd_indices, even_indices)
+    }else{
+      b_1 <- ifelse(j_deo %% 2 == 1, odd_indices, even_indices)
+    }
+
+  }
+  b_2 <- b_1 + 1
+
+  #--- Swaps -------------
+  for(i in seq_along(b_1)){
+    # We get which "machines" have the beta indexes
+    m_1 <- which(k_next == b_1)
+    m_2 <- which(k_next == b_2)
+    m <- c(m_1, m_2)
+
+    # Decide if it's a QuanTA move or Regular PT swap
+    if(b[i] %in% quanta_levels){
+      if(d == 1){
+        nswap <- attempt_quanta(mode_info,
+                                x_next[m_1], x_next[m_2],
+                                beta_next[m_1], beta_next[m_2],
+                                l_next[m_1], l_next[m_2],
+                                l_target, ...,
+                                unidimensional = TRUE)
+        x_next[m] <- nswap$x_next
+      }else{
+        nswap <- attempt_quanta(mode_info,
+                                x_next[m_1], x_next[m_2],
+                                beta_next[m_1], beta_next[m_2],
+                                l_next[m_1], l_next[m_2],
+                                l_target, ...,
+                                unidimensional = FALSE)
+        x_next[1, m, ] <- nswap$x_next
+      }
+    }else{
+      if(d == 1){
+        nswap <- attempt_swap(x_next[m_1], x_next[m_2],
+                              beta_next[m_1], beta_next[m_2],
+                              l_next[m_1], l_next[m_2],
+                              l_target, ...)
+      }else{
+        nswap <- attempt_swap(x_next[1, m_1, ], x_next[1, m_2, ],
+                              beta_next[m_1], beta_next[m_2],
+                              l_next[m_1], l_next[m_2],
+                              l_target, ...)
+      }
+    }
+
+    b <- c(b_2, b_1)
+    beta_next[m] <- nswap$beta_next
+    x_prop[m] <- nswap$x_prop
+    l_prop[m] <- nswap$l_prop
+    l_next[m] <- nswap$l_next
+    acc[b] <- nswap$acc
+    if(nswap$acc){
+      k_next[m] <- b
+    }
+
+  }
+
+  return(mget(c("x_next","acc","k_next","beta_next","l_next","x_prop","l_prop")))
 
 }
