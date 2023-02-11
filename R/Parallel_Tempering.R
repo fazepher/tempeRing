@@ -81,7 +81,10 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   cycle_length <- temp_moves + within_moves
   S_Tot <- cycles*(cycle_length)
   x <- array(dim = c(S_Tot + 1, K, d), dimnames = list(NULL, NULL, target_names))
-  l <- matrix(nrow = S_Tot + 1, ncol = K)
+  l_x <- matrix(nrow = S_Tot + 1, ncol = K)
+  y <- array(dim = c(S_Tot, K, d), dimnames = list(NULL, NULL, target_names))
+  l_y <- matrix(nrow = S_Tot, ncol = K)
+  delta_l <- matrix(nrow = S_Tot, ncol = K)
   k_indexes <- array(dim = c(cycles + 1, temp_moves + 1, K))
   beta_indexes <- array(dim = c(cycles + 1, temp_moves + 1, K))
   swap_acc <- array(-1, dim = c(cycles, temp_moves, K))
@@ -94,7 +97,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   k_indexes[1, 1, ] <- 1:K
   beta_indexes[1, 1, ] <- beta_schedule
   x[1, , ] <- x_0
-  l[1, ] <- l_0
+  l_x[1, ] <- l_0
 
   # Run iterations
   for(c in 1:cycles){
@@ -116,7 +119,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
                              beta_curr = beta_indexes[c, j, ],
                              k_curr = k_indexes[c, j,  ],
                              x_curr = x[(i-2)+j, , , drop = FALSE],
-                             l_curr = l[(i-2)+j, ],
+                             l_curr = l_x[(i-2)+j, ],
                              l_target, target_args,
                              K = K,
                              odd_indices = odd_indices,
@@ -128,8 +131,13 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
       k_indexes[c, j+1, ] <- swap_move$k_next
       beta_indexes[c, j+1, ] <- swap_move$beta_next
 
-      x[(i-1) + j, , ] <- swap_move$x_next
-      l[(i-1) + j, ] <- swap_move$l_next
+      next_ind <- (i-1) + j
+      prop_ind <- next_ind - 1
+
+      x[next_ind, , ] <- swap_move$x_next
+      l_x[next_ind, ] <- swap_move$l_next
+      y[prop_ind, , ] <- swap_move$x_prop
+      l_y[prop_ind, ] <- swap_move$l_prop
 
     }
 
@@ -137,20 +145,27 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
     # Update current cycle position index
     i <- i + temp_moves - 1
+    within_window_next <- i + 1:Within_Moves
+    within_window_prop <- within_window_next - 1
+
     for(k in 1:K){
 
-      k_current <- k_indexes[c, temp_moves + 1, k]
-      rwm_level_args <- list(x_0 = x[i, k , ],
-                             l_0 = l[i, k],
-                             beta = beta_indexes[c, temp_moves + 1, k],
-                             custom_rw_sampler = sampler_list[[k_current]],
-                             scale = scale_list[[k_current]],
-                             S = within_moves, burn = 0, silent = TRUE)
+      k_i <- which(k_indexes[c, Temp_Moves + 1, ] == k)
+
+      rwm_level_args <- list(x_0 = x[i, k_i , ],
+                             l_0 = l_x[i, k_i],
+                             beta = beta_schedule[k],
+                             custom_rw_sampler = sampler_list[[k]],
+                             scale = scale_list[[k]],
+                             S = Within_Moves, burn = 0, silent = TRUE)
       rwm_moves <- do.call(rwm_sampler_chain, c(rwm_level_args, l_target, target_args))
 
-      rwm_acc[c, , k_current] <- rwm_moves$acc
-      x[i + 1:within_moves, k, ] <- rwm_moves$x
-      l[i + 1:within_moves, k] <- rwm_moves$l
+      rwm_acc[c, , k] <- rwm_moves$acc
+      x[within_window_next, k_i, ] <- rwm_moves$x
+      l_x[within_window_next, k_i] <- rwm_moves$l_x
+      y[within_window_prop, k_i, ] <- rwm_moves$y
+      l_y[within_window_prop, k_i] <- rwm_moves$l_y
+      delta_l[within_window_prop, k_i] <- rwm_moves$delta_l
 
     }
 
