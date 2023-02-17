@@ -236,7 +236,7 @@ quanta_move <- function(type, j_deo, mode_info,
       x_next[m] <- nswap$x_next
     }else{
       nswap <- attempt_quanta(mode_info,
-                              x_curr[m_1], x_curr[m_2],
+                              x_curr[1, m_1, ], x_curr[1, m_2, ],
                               beta_curr[m_1], beta_curr[m_2],
                               l_curr[m_1], l_curr[m_2],
                               l_target, ...,
@@ -354,7 +354,7 @@ alps_swap_move <- function(type = "naive", j_deo = NULL, quanta_levels = NULL, m
         x_next[m] <- nswap$x_next
       }else{
         nswap <- attempt_quanta(mode_info,
-                                x_curr[m_1], x_curr[m_2],
+                                x_curr[1, m_1, ], x_curr[1, m_2, ],
                                 beta_curr[m_1], beta_curr[m_2],
                                 l_curr[m_1], l_curr[m_2],
                                 l_target, ...,
