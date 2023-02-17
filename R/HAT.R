@@ -1,7 +1,7 @@
 
 #' @export
 get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
-                         optimize = TRUE, method = "Nelder-Mead", control_optim = list(fnscale = -1)){
+                         optimize = TRUE, method = "BFGS", control_optim = list(fnscale = -1)){
 
   bh <- beta_hat %||% 1
   if(optimize){
@@ -10,14 +10,14 @@ get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
                                               control = control_optim, hessian = TRUE))
     lapply(optimizations, function(o) c(o$convergence, o$counts)) |> print()
     modes <- lapply(optimizations,function(o) o$par)
+    mH <- lapply(optimizations, function(o) -o$hessian)
   }else{
     modes <- mode_guess
+    mH <- lapply(modes, function(m) -(optimHess(m, l_target, ...)))
   }
 
   l_target_modes <- vapply(modes, l_target, numeric(1), beta = 1, ...)
 
-  # Necesitamos volver a calcular la Hessiana porque numDeriv parece ser más estable numéricamente
-  mH <- lapply(modes, function(m) -(numDeriv::hessian(l_target, m, ...)))
   cholCov_inv <- lapply(mH, chol)
   hldetCov_inv <- vapply(cholCov_inv, function(chS) sum(log(diag(chS))), numeric(1))
   Cov <- lapply(mH,solve)
