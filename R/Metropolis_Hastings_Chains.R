@@ -1,7 +1,8 @@
 
-#' Random Walk Metropolis Chain
+#' Random Walk Metropolis and MH Chain
 #'
-#' Function for running a single chain using the Random Walk Metropolis algorithm for a user-specified target.
+#' Functions for running a single chain using the Random Walk Metropolis or a general Metropolis Hastings
+#' algorithm for a user-specified target.
 #'
 #' Missing details for dimension and burn-in
 #' # RW Sampler
@@ -142,17 +143,29 @@ rwm_sampler_chain <- function(l_target, ...,
 
 }
 
+#'
+#' @rdname rwm_sampler_chain
+#'
+#' @param mh_sampler (Optional) User-specified Metropolis-Hastings sampler function,
+#' must accept as its first argument the current state.
+#' @param other_sampler_args (Optional) A list of further arguments passed on to `mh_sampler`.
+#' @param lq_mh (Optional) User-specified log-density function for the MH sampler,
+#' must accept as its first argument the current/proposed state.
+#' @param other_lq_args (Optional) A list of further arguments passed on to `lq_mh`.
+#'
+#' @export
+#'
 mh_sampler_chain <- function(l_target, ...,
                              mh_sampler, other_sampler_args = NULL,
                              lq_mh, other_lq_args = NULL,
                              S = 1000, burn = 0, d = 1,
                              x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL, silent = FALSE){
 
-  #--- Preparation -------------
+#--- Preparation -------------
 
   # Checking for valid sample sizes
   stopifnot(S >= 1)
-  stopifnot(0 <= burn && burn < S)
+  stopifnot(-1 <= burn && burn < S)
 
   # Possibly set seed
   if(!is.null(seed)){
@@ -175,7 +188,7 @@ mh_sampler_chain <- function(l_target, ...,
   delta_l <- numeric(S)
   acc <- logical(S)
 
-  #--- Algorithm -------------
+#--- Algorithm -------------
 
   # Initialize
   x[1, ] <- x_0
@@ -185,7 +198,7 @@ mh_sampler_chain <- function(l_target, ...,
   for(s in 1:S){
     rwm_step <- mh_sampling_step(x_curr = x[s, ], l_curr = l_x[s],
                                  l_target, ...,
-                                 sampler, sampler_args = other_sampler_args,
+                                 sampler = mh_sampler, sampler_args = other_sampler_args,
                                  lq_sampler = lq_mh, lq_sampler_args = other_lq_args,
                                  do_checks = FALSE)
     x[s+1, ] <- rwm_step$x_next
@@ -196,7 +209,7 @@ mh_sampler_chain <- function(l_target, ...,
     acc[s] <- rwm_step$accepted
   }
 
-  #--- Post processing and result -------------
+#--- Post processing and result -------------
 
   acc_rate <- mean(acc)
   if(!silent){
@@ -204,14 +217,20 @@ mh_sampler_chain <- function(l_target, ...,
     cat(paste("Acceptance Rate:", round(acc_rate,3)), sep = "\n")
   }
 
+  if(burn == -1){
+    return(mget(c("x", "l_x", "acc", "acc_rate", "y", "l_y", "delta_l")))
+  }
+
   if(burn == 0){
     return(list(x = x[-1, ], l_x = l_x[-1],
                 acc = acc, acc_rate = acc_rate,
-                y = y[-1, ], l_y = l_y[-1], delta_l = delta_l[-1]))
+                y = y, l_y = l_y, delta_l = delta_l))
   }
-  burn_window <- 1:(burn+1)
-  return(list(x = x[-burn_window, ], l_x = l_x[-burn_window],
-              acc = acc[-(1:burn)], acc_rate = acc_rate,
-              y = y[-(1:burn), ], l_y = l_y[-(1:burn)], delta_l = delta_l[-(1:burn)]))
+
+  bwx <- 1:(burn+1)
+  bwy <- 1:burn
+  return(list(x = x[-bwx, ], l_x = l_x[-bwx],
+              acc = acc[-bwy], acc_rate = acc_rate,
+              y = y[-bwy, ], l_y = l_y[-bwy], delta_l = delta_l[-bwy]))
 
 }
