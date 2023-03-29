@@ -2,7 +2,8 @@
 % Please edit documentation in R/Metropolis_Hastings_Chains.R
 \name{rwm_sampler_chain}
 \alias{rwm_sampler_chain}
-\title{Random Walk Metropolis Chain}
+\alias{mh_sampler_chain}
+\title{Random Walk Metropolis and MH Chain}
 \usage{
 rwm_sampler_chain(
   l_target,
@@ -17,6 +18,23 @@ rwm_sampler_chain(
   custom_rw_sampler = NULL,
   more_sampler_args = NULL,
   d = NULL,
+  silent = FALSE
+)
+
+mh_sampler_chain(
+  l_target,
+  ...,
+  mh_sampler,
+  other_sampler_args = NULL,
+  lq_mh,
+  other_lq_args = NULL,
+  S = 1000,
+  burn = 0,
+  d = 1,
+  x_0 = NULL,
+  x_0_u = 2,
+  l_0 = NULL,
+  seed = NULL,
   silent = FALSE
 )
 }
@@ -50,6 +68,16 @@ the current state of the chain and \code{scale} (see \verb{RW Sampler}).}
 \item{d}{(Optional) Dimensionality of the problem (see \code{Details}).}
 
 \item{silent}{(Default = FALSE) Should the algorithm avoid printing messages?}
+
+\item{mh_sampler}{(Optional) User-specified Metropolis-Hastings sampler function,
+must accept as its first argument the current state.}
+
+\item{other_sampler_args}{(Optional) A list of further arguments passed on to \code{mh_sampler}.}
+
+\item{lq_mh}{(Optional) User-specified log-density function for the MH sampler,
+must accept as its first argument the current/proposed state.}
+
+\item{other_lq_args}{(Optional) A list of further arguments passed on to \code{lq_mh}.}
 }
 \value{
 A list containing the results of the Random-Walk Metropolis Chain:
@@ -71,7 +99,8 @@ A vector of MH log-ratios.
 }
 }
 \description{
-Function for running a single chain using the Random Walk Metropolis algorithm for a user-specified target.
+Functions for running a single chain using the Random Walk Metropolis or a general Metropolis Hastings
+algorithm for a user-specified target.
 }
 \details{
 Missing details for dimension and burn-in
