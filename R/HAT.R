@@ -1,14 +1,17 @@
 
 #' @export
 get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
-                         optimize = TRUE, method = "BFGS", control_optim = list(fnscale = -1)){
+                         optimize = TRUE, method = "BFGS", control_optim = list(fnscale = -1),
+                         verbose_optim = FALSE){
 
   bh <- beta_hat %||% 1
   if(optimize){
     optimizations <- lapply(mode_guess,
                             function(m) optim(m, l_target, beta = bh, ..., method = method,
                                               control = control_optim, hessian = TRUE))
-    lapply(optimizations, function(o) c(o$convergence, o$counts)) |> print()
+    if(verbose_optim){
+      lapply(optimizations, function(o) c(o$convergence, o$counts)) |> print()
+    }
     modes <- lapply(optimizations,function(o) o$par)
     mH <- lapply(optimizations, function(o) -o$hessian)
   }else{
