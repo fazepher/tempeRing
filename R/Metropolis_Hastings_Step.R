@@ -178,7 +178,8 @@ mh_step <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0, lq_p2c = 0,
 #'
 metropolis_step <- function(x_curr, x_prop, l_curr, l_prop, do_checks = TRUE, full_return = TRUE){
 
-  mh_step(x_curr, x_prop, l_curr, l_prop, do_checks = do_checks)
+  mh_step(x_curr, x_prop, l_curr, l_prop,
+          do_checks = do_checks, full_return = full_return)
 
 }
 
@@ -215,7 +216,8 @@ mh_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sampler_arg
     lq_p2c <- 0
   }
 
-  results <- mh_step(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c, do_checks = do_checks)
+  results <- mh_step(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c,
+                     do_checks = do_checks, full_return = full_return)
 
   return(results)
 
@@ -230,6 +232,6 @@ metropolis_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sam
 
   mh_sampling_step(x_curr, l_curr, l_target, ...,
                    sampler = sampler, sampler_args = sampler_args,
-                   do_checks = do_checks)
+                   do_checks = do_checks, full_return = full_return)
 
 }
