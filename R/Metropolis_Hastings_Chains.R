@@ -49,7 +49,7 @@
 #'
 #' @examples
 rwm_sampler_chain <- function(l_target, ...,
-                              scale = 1, S = 1000, burn = 0,
+                              scale = 2.38, S = 1000, burn = 0,
                               x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL,
                               custom_rw_sampler = NULL, more_sampler_args = NULL,
                               d = NULL, silent = FALSE){
