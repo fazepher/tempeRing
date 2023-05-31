@@ -150,7 +150,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
     for(k in 1:K){
 
-      k_i <- which(k_indexes[c, Temp_Moves + 1, ] == k)
+      k_i <- which(k_indexes[c, temp_moves + 1, ] == k)
 
       rwm_level_args <- list(x_0 = x[i, k_i , ],
                              l_0 = l_x[i, k_i],
