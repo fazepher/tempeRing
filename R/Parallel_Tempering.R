@@ -188,7 +188,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
   }
 
   global_times[3] <- Sys.time()
-  return(list(x = x, l = l,
+  return(list(x = x, l_x = l_x,
               k_indexes = k_indexes[-(cycles+1), , ],
               beta_indexes = beta_indexes[-(cycles+1), , ],
               swap_acc = swap_acc, swap_acc_rates = swap_acc_rates,
