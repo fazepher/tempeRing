@@ -520,7 +520,7 @@ ALPS_rwm_leaner_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                              custom_rw_sampler = sampler_list[[k]],
                              scale = scale_list[[k]],
                              S = Within_Moves, burn = 0, silent = TRUE)
-      rwm_moves <- do.call(rwm_sampler_leaner_chain, c(rwm_level_args, l_target, target_args))
+      rwm_moves <- do.call(rwm_sampler_chain, c(rwm_level_args, l_target, target_args))
 
       rwm_acc[c, , k] <- rwm_moves$acc
       x[within_window_next, k_i, ] <- rwm_moves$x
@@ -558,11 +558,11 @@ ALPS_rwm_leaner_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                              custom_rw_sampler = sampler_list[[K]],
                              scale = scale_list[[K]],
                              S = Within_Moves, burn = 0, silent = TRUE)
-      rwm_moves <- do.call(rwm_sampler_leaner_chain, c(rwm_level_args, l_target, target_args))
+      rwm_moves <- do.call(rwm_sampler_chain, c(rwm_level_args, l_target, target_args))
 
       rwm_acc[c, , K] <- rwm_moves$acc
       x[within_window_next, k_i, ] <- rwm_moves$x
-      l_x[k_i] <- rwm_moves$l_x
+      l_x[k_i] <- rwm_moves$l_x[Within_Moves]
 
     }
 
