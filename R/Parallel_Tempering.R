@@ -145,7 +145,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
 
     # Update current cycle position index
     i <- i + temp_moves - 1
-    within_window_next <- i + 1:Within_Moves
+    within_window_next <- i + 1:within_moves
     within_window_prop <- within_window_next - 1
 
     for(k in 1:K){
@@ -157,7 +157,7 @@ PT_rwm_chain <- function(l_target, ..., beta_schedule, swap_type = "deo",
                              beta = beta_schedule[k],
                              custom_rw_sampler = sampler_list[[k]],
                              scale = scale_list[[k]],
-                             S = Within_Moves, burn = 0, silent = TRUE)
+                             S = within_moves, burn = 0, silent = TRUE)
       rwm_moves <- do.call(rwm_sampler_chain, c(rwm_level_args, l_target, target_args))
 
       rwm_acc[c, , k] <- rwm_moves$acc
