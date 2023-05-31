@@ -3,12 +3,14 @@
 \name{rwm_sampler_chain}
 \alias{rwm_sampler_chain}
 \alias{mh_sampler_chain}
+\alias{rwm_sampler_leaner_chain}
+\alias{mh_sampler_leaner_chain}
 \title{Random Walk Metropolis and MH Chain}
 \usage{
 rwm_sampler_chain(
   l_target,
   ...,
-  scale = 1,
+  scale = 2.38,
   S = 1000,
   burn = 0,
   x_0 = NULL,
@@ -22,6 +24,39 @@ rwm_sampler_chain(
 )
 
 mh_sampler_chain(
+  l_target,
+  ...,
+  mh_sampler,
+  other_sampler_args = NULL,
+  lq_mh,
+  other_lq_args = NULL,
+  S = 1000,
+  burn = 0,
+  d = 1,
+  x_0 = NULL,
+  x_0_u = 2,
+  l_0 = NULL,
+  seed = NULL,
+  silent = FALSE
+)
+
+rwm_sampler_leaner_chain(
+  l_target,
+  ...,
+  scale = 2.38,
+  S = 1000,
+  burn = 0,
+  x_0 = NULL,
+  x_0_u = 2,
+  l_0 = NULL,
+  seed = NULL,
+  custom_rw_sampler = NULL,
+  more_sampler_args = NULL,
+  d = NULL,
+  silent = FALSE
+)
+
+mh_sampler_leaner_chain(
   l_target,
   ...,
   mh_sampler,
@@ -107,5 +142,8 @@ Missing details for dimension and burn-in
 }
 \section{RW Sampler}{
 Missing section explaining behavior of \code{scale} and default/custom samplers.
+
+The \verb{_leaner }functions, for memory performance considerations, don't store all the information general ones do.
+In particular, they only return the chain values \code{x} and the global acceptance rate \code{acc_rate}.
 }
 
