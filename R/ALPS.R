@@ -4,18 +4,14 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                            beta_schedule, swap_type = "deo", quanta_levels = NULL,
                            scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                            x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL, jump_p = 0.7,
-                           custom_rw_sampler = NULL, target_names = NULL, d = NULL,
+                           k_0 = NULL, custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                            quanta_mode_info = NULL, silent = FALSE){
 
   #--- HAT use -------------
-  if(HAT){
-    l_target <- lHAT_target
-    target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
-                     rlang::dots_list(...))
-  }else{
-    l_target <- ltemp_target
-    target_args <- rlang::dots_list(...)
-  }
+  l_target <- lHAT_target
+  target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
+                   rlang::dots_list(...))
+
 
   #--- Preparation -------------
 
@@ -110,13 +106,14 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
     stopifnot(is.numeric(x_0))
     stopifnot(nrow(x_0) == K && ncol(x_0) == d)
   }
+  k_0 <- k_0 %||% 1:K
+  b_0 <- beta_schedule[k_0]
   if(is.null(l_0)){
     # More verbose but attempts to use mapply have failed
     # (asplit for the matrix rows may also fail because it keeps them as arrays)
     l_0 <- numeric(K)
-    for(k in seq_along(beta_schedule)){
-      temporal <- do.call(l_target, c(list(x = x_0[k, ], beta = beta_schedule[k]), target_args))
-      l_0[k] <- temporal
+    for(m in 1:K){
+      l_0[m] <- do.call(l_target, c(list(x = x_0[k_0[m], ], beta = b_0[m]), target_args))
     }
   }
 
@@ -137,8 +134,8 @@ ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
   #--- Algorithm -------------
 
   # Initialize
-  k_indexes[1, 1, ] <- 1:K
-  beta_indexes[1, 1, ] <- beta_schedule
+  k_indexes[1, 1, ] <- k_0
+  beta_indexes[1, 1, ] <- b_0[k_0]
   x[1, , ] <- x_0
   l_x[1, ] <- l_0
 
@@ -325,18 +322,13 @@ ALPS_rwm_leaner_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                                   beta_schedule, swap_type = "deo", quanta_levels = NULL,
                                   scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                                   x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL, jump_p = 0.7,
-                                  custom_rw_sampler = NULL, target_names = NULL, d = NULL,
+                                  k_0 = NULL, custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                                   quanta_mode_info = NULL, silent = FALSE){
 
   #--- HAT use -------------
-  if(HAT){
-    l_target <- lHAT_target
-    target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
-                     rlang::dots_list(...))
-  }else{
-    l_target <- ltemp_target
-    target_args <- rlang::dots_list(...)
-  }
+  l_target <- lHAT_target
+  target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
+                   rlang::dots_list(...))
 
   #--- Preparation -------------
 
@@ -431,13 +423,14 @@ ALPS_rwm_leaner_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
     stopifnot(is.numeric(x_0))
     stopifnot(nrow(x_0) == K && ncol(x_0) == d)
   }
+  k_0 <- k_0 %||% 1:K
+  b_0 <- beta_schedule[k_0]
   if(is.null(l_0)){
     # More verbose but attempts to use mapply have failed
     # (asplit for the matrix rows may also fail because it keeps them as arrays)
     l_0 <- numeric(K)
-    for(k in seq_along(beta_schedule)){
-      temporal <- do.call(l_target, c(list(x = x_0[k, ], beta = beta_schedule[k]), target_args))
-      l_0[k] <- temporal
+    for(m in 1:K){
+      l_0[m] <- do.call(l_target, c(list(x = x_0[k_0[m], ], beta = b_0[m]), target_args))
     }
   }
 
@@ -454,8 +447,8 @@ ALPS_rwm_leaner_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
   #--- Algorithm -------------
 
   # Initialize
-  k_indexes[1, 1, ] <- 1:K
-  beta_indexes[1, 1, ] <- beta_schedule
+  k_indexes[1, 1, ] <- k_0
+  beta_indexes[1, 1, ] <- b_0[k_0]
   x[1, , ] <- x_0
   l_x <- l_0
 
@@ -628,19 +621,14 @@ ALPS_mh_chain <- function(ltemp_target, ..., d,
                           beta_schedule, swap_type = "deo", quanta_levels = NULL,
                           Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                           x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL, jump_p = 0.7,
-                          quanta_mode_info = NULL, silent = FALSE, target_names = NULL){
+                          k_0 = NULL, quanta_mode_info = NULL, silent = FALSE, target_names = NULL){
 
-#--- HAT use -------------
-  if(HAT){
-    l_target <- lHAT_target
-    target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
-                     rlang::dots_list(...))
-  }else{
-    l_target <- ltemp_target
-    target_args <- rlang::dots_list(...)
-  }
+  #--- HAT use -------------
+  l_target <- lHAT_target
+  target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
+                   rlang::dots_list(...))
 
-#--- Preparation -------------
+  #--- Preparation -------------
 
   # General PT parameters
   start_time <- Sys.time()
@@ -702,13 +690,14 @@ ALPS_mh_chain <- function(ltemp_target, ..., d,
     stopifnot(is.numeric(x_0))
     stopifnot(nrow(x_0) == K && ncol(x_0) == d)
   }
+  k_0 <- k_0 %||% 1:K
+  b_0 <- beta_schedule[k_0]
   if(is.null(l_0)){
     # More verbose but attempts to use mapply have failed
     # (asplit for the matrix rows may also fail because it keeps them as arrays)
     l_0 <- numeric(K)
-    for(k in seq_along(beta_schedule)){
-      temporal <- do.call(l_target, c(list(x = x_0[k, ], beta = beta_schedule[k]), target_args))
-      l_0[k] <- temporal
+    for(m in 1:K){
+      l_0[m] <- do.call(l_target, c(list(x = x_0[k_0[m], ], beta = b_0[m]), target_args))
     }
   }
 
@@ -729,8 +718,8 @@ ALPS_mh_chain <- function(ltemp_target, ..., d,
 #--- Algorithm -------------
 
   # Initialize
-  k_indexes[1, 1, ] <- 1:K
-  beta_indexes[1, 1, ] <- beta_schedule
+  k_indexes[1, 1, ] <- k_0
+  beta_indexes[1, 1, ] <- b_0
   x[1, , ] <- x_0
   l_x[1, ] <- l_0
 
