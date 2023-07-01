@@ -1042,12 +1042,8 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
     stopifnot(is.numeric(x_0))
     stopifnot(nrow(x_0) == d && ncol(x_0) == K)
   }
-  if(is.null(k_0)){
-    k_0 <- 1:K
-    b_0 <- beta_schedule
-  }else{
-    b_0 <- beta_schedule[k_0]
-  }
+  k_0 <- k_0 %||% 1:K
+  b_0 <- beta_schedule[k_0]
   if(is.null(l_0)){
     # More verbose but attempts to use mapply have failed
     # (asplit for the matrix rows may also fail because it keeps them as arrays)
@@ -1059,12 +1055,10 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
 
 
   # Preallocate containers
-  cycle_length <- Temp_Moves + Within_Moves
-  x <- lapply(1:(Cycles + 1), function(c){
-    lapply(1:K, function(k) matrix(NA_real_, cycle_length, d))
-  })
-  k_indexes <- lapply(1:(Cycles + 1), function(c) matrix(NA_integer_, nrow = Temp_Moves, ncol = K))
-  beta_indexes <- lapply(1:(Cycles + 1), function(c) matrix(NA_real_, nrow = Temp_Moves, ncol = K))
+  cycle_length <- Within_Moves + Temp_Moves
+  x <- lapply(1:K, function(m) matrix(NA_real_, nrow = d, ncol = Cycles*cycle_length + 1))
+  k_indexes <- matrix(NA_integer_, nrow = Cycles*Temp_Moves + 1, ncol = K)
+  beta_indexes <- matrix(NA_real_, nrow = Cycles*Temp_Moves + 1, ncol = K)
   swap_acc <- array(-1, dim = c(K-1, Temp_Moves, Cycles))
   rwm_acc <- lapply(1:K, function(k) matrix(NA, nrow = Within_Moves, ncol = Cycles))
 
@@ -1072,10 +1066,10 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
 
   # Initialize
   for(m in 1:K){
-    x[[1]][[m]][cycle_length, ] <- x_0[ , m]
+    x[[m]][ , 1] <- x_0[ , m]
   }
-  k_indexes[[1]][Temp_Moves, ] <- k_0
-  beta_indexes[[1]][Temp_Moves, ] <- b_0
+  k_indexes[1, ] <- k_0
+  beta_indexes[1, ] <- b_0
   l_x <- l_0
 
   # Determine LPS cycles at coldest level
@@ -1083,82 +1077,60 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
 
 
   # Run Cycles
+  i_cycle <- 1
+  j_cycle <- 1
   for(c in 1:Cycles){
 
-    i_c <- c+1
     if(!silent & isTRUE(c %% floor(Cycles*0.05) == 0)){
       cat(paste0("Avance: ", round(100*c/Cycles), "%"), sep = "\n")
       cat(format(Sys.time(), usetz=TRUE), sep = "\n")
     }
 
-    # Within Level Exploration
-    # Iteration containers (for possible parallelism)
-    x_c <- lapply(x[[c]],function(x_m) x_m[cycle_length, ])
-    k_c <- k_indexes[[c]][Temp_Moves, ]
-    u_c <- u_lps[c] & k_c == K
-    beta_c <- beta_indexes[[c]][Temp_Moves, ]
-    scale_c <- scale_list[k_c]
-    sampler_c <- sampler_list[k_c]
-    within_level_moves <- mapply(FUN = make_within_level_moves,
-                                 x_w = x_c, l_w = l_x, beta_w = beta_c,
-                                 scale_w = scale_c,  sampler_w = sampler_c,
-                                 u_w = u_c,
-                                 MoreArgs = list(l_target_w = l_target,
-                                                 other_target_args = target_args,
-                                                 mh_sampler_w = lpsampler, lq_mh_w = lpsampler_q,
-                                                 S_w = Within_Moves, d_w = d),
-                                 SIMPLIFY = FALSE)
+    # Within Level Exploration (possible parallelism)
+    within_level_moves <- future.apply::future_mapply(
+      FUN = make_within_level_moves,
+      x_w = lapply(x, function(x_m) x_m[, i_cycle]),
+      l_w = l_x,
+      beta_w = beta_indexes[j_cycle, ],
+      scale_w = scale_list[k_indexes[j_cycle, ]],
+      sampler_w = sampler_list[k_indexes[j_cycle, ]],
+      u_w = u_lps[c] & (k_indexes[j_cycle, ] == K),
+      SIMPLIFY = FALSE,
+      future.seed = TRUE,
+      future.globals = c("Within_Moves","d"))
     for(m in 1:K){
-      x[[i_c]][[m]][1:Within_Moves,] <- within_level_moves[[m]]$x
+      x[[m]][ , i_cycle + 1:Within_Moves] <- t(within_level_moves[[m]]$x)
       l_x[m] <- within_level_moves[[m]]$l_x_curr
-      rwm_acc[[k_c[m]]][,c] <- within_level_moves[[m]]$acc
+      rwm_acc[[ k_indexes[j_cycle, m] ]][ , c] <- within_level_moves[[m]]$acc
     }
+
+    i_cycle <- i_cycle + Within_Moves
 
     # Temperature Swaps
-    swap_arguments <- list(type = swap_type, j_deo = ifelse(Temp_Moves == 1, c, 1),
-                           quanta_levels = quanta_levels, mode_info = quanta_mode_info,
-                           beta_curr = beta_c, k_curr = k_c,
-                           x_curr = x_c,
-                           l_curr = l_x,
-                           l_target, target_args,
-                           K = K,
-                           odd_indices = odd_indices,
-                           even_indices = even_indices,
-                           d = d)
-    swap_move <- do.call(alps_swap_move_list, swap_arguments)
+    for(t in 1:Temp_Moves){
 
-    swap_acc[, 1, c] <- swap_move$acc
-    k_indexes[[i_c]][1, ] <- swap_move$k_next
-    beta_indexes[[i_c]][1, ] <- swap_move$beta_next
-    for(m in 1:K){
-      x[[i_c]][[m]][Within_Moves + 1, ] <- swap_move$x_next[[m]]
-    }
-    l_x <- swap_move$l_next
-    if(Temp_Moves > 1){
-      for(j in 2:Temp_Moves){
+      swap_arguments <- list(x_curr = lapply(x, function(x_m) x_m[, i_cycle]),
+                             l_curr = l_x,
+                             beta_curr = beta_indexes[j_cycle, ],
+                             k_curr = k_indexes[j_cycle, ],
+                             type = swap_type, j_deo = ifelse(Temp_Moves == 1, c, t),
+                             l_target, target_args, quanta_levels = quanta_levels,
+                             mode_info = quanta_mode_info, K = K, d = d,
+                             odd_indices = odd_indices, even_indices = even_indices)
+      swap_moves <- do.call(alps_swap_move_list, swap_arguments)
 
-        swap_arguments <- list(type = swap_type, j_deo = j,
-                               quanta_levels = quanta_levels, mode_info = quanta_mode_info,
-                               beta_curr = beta_indexes[[i_c]][j-1, ],
-                               k_curr = k_indexes[[i_c]][j-1, ],
-                               x_curr = lapply(x[[i_c]], function(x_m) x_m[Within_Moves + j - 1, ]),
-                               l_curr = l_x,
-                               l_target, target_args,
-                               K = K,
-                               odd_indices = odd_indices,
-                               even_indices = even_indices,
-                               d = d)
-        swap_move <- do.call(alps_swap_move_list, swap_arguments)
+      swap_acc[, t, c] <- swap_moves$acc
+      l_x <- swap_moves$l_next
 
-        swap_acc[, j, c] <- swap_move$acc
-        k_indexes[[i_c]][j, ] <- swap_move$k_next
-        beta_indexes[[i_c]][j, ] <- swap_move$beta_next
-        for(m in 1:K){
-          x[[i_c]][[m]][Within_Moves + j, ] <- swap_move$x_next[[m]]
-        }
-        l_x <- swap_move$l_next
-
+      i_cycle <- i_cycle + 1
+      for(m in 1:K){
+        x[[m]][, i_cycle] <- swap_moves$x_next[[m]]
       }
+
+      j_cycle <- j_cycle + 1
+      k_indexes[j_cycle, ] <- swap_moves$k_next
+      beta_indexes[j_cycle, ] <- swap_moves$beta_next
+
     }
 
   }
@@ -1184,10 +1156,11 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
   }
 
   burn_window <- seq(1, burn_cycles + 1)
+  burn_window_k <- seq(1, burn_cycles*Temp_Moves + 1)
   global_times[3] <- Sys.time()
-  return(list(x = x[-burn_window],
-              k_indexes = k_indexes[-burn_window],
-              beta_indexes =  beta_indexes[-burn_window],
+  return(list(x = lapply(x,function(x_m) x_m[,-burn_window]),
+              k_indexes = k_indexes[-burn_window_k],
+              beta_indexes =  beta_indexes[-burn_window_k],
               swap_acc = swap_acc[,,-burn_window],
               swap_acc_rates = swap_acc_rates,
               rwm_acc = lapply(rwm_acc, function(moves) moves[,-burn_window]),
