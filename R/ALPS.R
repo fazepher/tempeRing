@@ -916,7 +916,7 @@ ALPS_mh_chain <- function(ltemp_target, ..., d,
 }
 
 #' @export
-ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
+ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
                                        beta_schedule, swap_type = "deo", quanta_levels = NULL,
                                        scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                                        x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL, jump_p = 0.7,
@@ -924,14 +924,9 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                                        quanta_mode_info = NULL, silent = FALSE){
 
   #--- HAT use -------------
-  if(HAT){
-    l_target <- lHAT_target
-    target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
-                     rlang::dots_list(...))
-  }else{
-    l_target <- ltemp_target
-    target_args <- rlang::dots_list(...)
-  }
+  l_target <- lHAT_target
+  target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
+                   rlang::dots_list(...))
 
   #--- Preparation -------------
 
@@ -939,22 +934,23 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
   start_time <- Sys.time()
   global_times <- rep(start_time, 3)
   K <- length(beta_schedule)
+  beta_max <- beta_schedule[K]
   odd_indices <- seq(1, K, by = 2)
   even_indices <- seq(2, K, by = 2)
 
   # Leap-Point Sampler
-  lpsampler <- function(x_curr, beta_max = beta_schedule[K], mode_info = HAT_info){
-    z <- sample(x = seq_along(mode_info$w),size = 1, prob = mode_info$w)
-    x_prop <- rmvtnorm_temp(n = 1, beta = beta_max, mu = mode_info$modes[[z]],
-                            LChol_sigma = t(mode_info$cholCov[[z]]))
+  lpsampler <- function(x_curr){
+    z <- sample(x = seq_along(HAT_info$w),size = 1, prob = HAT_info$w)
+    x_prop <- rmvtnorm_temp(n = 1, beta = beta_max, mu = HAT_info$modes[[z]],
+                            LChol_sigma = t(HAT_info$cholCov[[z]]))
     return(x_prop)
   }
-  lpsampler_q <- function(x, beta_max = beta_schedule[K], mode_info = HAT_info){
-    n_modes <- length(mode_info$w)
+  lpsampler_q <- function(x_curr, x_prop){
+    n_modes <- length(HAT_info$w)
     l_modes <- vapply(1:n_modes, function(m)
-      lmvtnorm_temp(x = x, beta = beta_max, mu = mode_info$modes[[m]],
-                    sigma_inv = mode_info$mH[[m]], logdet_sigma = 2*mode_info$half_l_detCov[[m]]) +
-        log(mode_info$w[[m]]), FUN.VALUE = 1.0)
+      lmvtnorm_temp(x = x_prop, beta = beta_max, mu = HAT_info$modes[[m]],
+                    sigma_inv = HAT_info$mH[[m]], logdet_sigma = 2*HAT_info$half_l_detCov[[m]]) +
+        log(HAT_info$w[[m]]), FUN.VALUE = 1.0)
 
     indmax <- which.max(l_modes)   ##### Create a stable evaluation of the log density.
     comb <- exp(l_modes[-indmax]-l_modes[indmax])
@@ -963,21 +959,21 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
   }
 
   # Within Level Moves Dispatcher
-  make_within_level_moves <- function(x_w, l_w, beta_w, scale_w, sampler_w, u_w,
-                                      l_target_w, other_target_args, mh_sampler_w, lq_mh_w,
-                                      S_w, d_w){
+  make_within_level_moves <- function(x_w, l_w, beta_w, scale_w, sampler_w, u_w){
     if(u_w){
-      lps_args_list <- list(x_0 = x_w, l_0 = l_w, l_target = l_target_w,
-                            mh_sampler = mh_sampler_w, lq_mh = lq_mh_w,
-                            S = S_w, d = d_w, burn = 0, silence = TRUE) |>
-        c(other_target_args)
-      return(do.call(mh_sampler_leaner_chain,lps_args_list))
+      lps_args_list <- list(x_0 = x_w, l_0 = l_w, beta = beta_w,
+                            mh_sampler = lpsampler, lq_mh = lpsampler_q,
+                            S = Within_Moves, d = d, burn = 0, silent = TRUE) |>
+        c("l_target" = l_target, target_args)
+      aux <- do.call(mh_sampler_leaner_chain, lps_args_list)
+    }else{
+      rwm_args_list <- list(x_0 = x_w, l_0 = l_w, beta = beta_w,
+                            scale = scale_w, custom_rw_sampler = sampler_w,
+                            S = Within_Moves, d = d, burn = 0, silent = TRUE) |>
+        c("l_target" = l_target, target_args)
+      aux <- do.call(rwm_sampler_leaner_chain, rwm_args_list)
     }
-    rwm_args_list <- list(x_0 = x_w, l_0 = l_w, l_target = l_target_w, beta = beta_w,
-                          scale = scale_w, custom_rw_sampler = sampler_w,
-                          S = S_w, d = d_w, burn = 0, silent = TRUE) |>
-      c(other_target_args)
-    return(do.call(rwm_sampler_chain, rwm_args_list))
+    return(aux)
 
   }
 
