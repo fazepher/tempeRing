@@ -179,26 +179,27 @@ attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l
   x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1]])
   mod_quanta_1 <- modAssignment(x_quanta_1, beta_2, mode_info, assign_type = "euclidean")$A
 
+  # Early exit if the transformation is not reversible
+  if(mod_1 != mod_quanta_1){
+    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
+                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
+  }
+
   mod_2 <- modAssignment(x_2, beta_2, mode_info, assign_type = "euclidean")$A
   x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2]])
   mod_quanta_2 <- modAssignment(x_quanta_2, beta_1, mode_info, assign_type = "euclidean")$A
 
+  # Early exit if the transformation is not reversible
+  if(mod_2 != mod_quanta_2){
+    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
+                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
+  }
+
   swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2), ...)),
                 do.call(l_target,c(list(x = x_quanta_2, beta = beta_1), ...)))
-
   x_quanta <- list(x_quanta_1, x_quanta_2)
-  rej_list <- list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
-                   "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
-                   "l_prop" = swaped_l, "x_prop" = x_quanta)
-
-
-  # Early exit if the transformation is not reversible
-  if(mod_1 != mod_quanta_1){
-    return(rej_list)
-  }
-  if(mod_2 != mod_quanta_2){
-    return(rej_list)
-  }
 
   delta_l <- sum(swaped_l) - (l_1 + l_2)
 
@@ -207,7 +208,9 @@ attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l
                 "l_next" = swaped_l, "x_next" = x_quanta,
                 "l_prop" = swaped_l, "x_prop" = x_quanta))
   }
-  return(rej_list)
+  return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+              "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
+              "l_prop" = swaped_l, "x_prop" = x_quanta))
 
 }
 
