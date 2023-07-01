@@ -361,7 +361,9 @@ ALPS_rwm_leaner_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
 
 
   # QuanTA levels checking
-  if(!is.null(quanta_levels)){
+  if(is.null(quanta_levels)){
+    quanta_levels <- K-1
+  }else{
     if(!all(quanta_levels %in% seq(1,K-1))){
       stop(paste("Invalid quanta_levels.",
                  "These must be the base indexes for which QuanTA swaps will be attempted,",
@@ -659,7 +661,9 @@ ALPS_mh_chain <- function(ltemp_target, ..., d,
 
 
   # QuanTA levels checking
-  if(!is.null(quanta_levels)){
+  if(is.null(quanta_levels)){
+    quanta_levels <- K-1
+  }else{
     if(!all(quanta_levels %in% seq(1,K-1))){
       stop(paste("Invalid quanta_levels.",
                  "These must be the base indexes for which QuanTA swaps will be attempted,",
