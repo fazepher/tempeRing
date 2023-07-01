@@ -319,10 +319,10 @@ rwm_sampler_leaner_chain <- function(l_target, ...,
   }
 
   if(burn == 0){
-    return(list(x = x[-1, ], l_x_curr = l_x, acc = acc[-1], acc_rate = acc_rate))
+    return(list(x = x[-1, ], l_x_curr = l_x, acc = acc, acc_rate = acc_rate))
   }
 
-  return(list(x = x[-(1:(burn+1)), ], l_x_curr = l_x, acc = acc[-(1:burn+1)], acc_rate = acc_rate))
+  return(list(x = x[-(1:(burn+1)), ], l_x_curr = l_x, acc = acc[-seq(1,burn)], acc_rate = acc_rate))
 
 }
 
@@ -391,9 +391,9 @@ mh_sampler_leaner_chain <- function(l_target, ...,
   }
 
   if(burn == 0){
-    return(list(x = x[-1, ], l_x_curr = l_x, acc = acc[-1], acc_rate = acc_rate))
+    return(list(x = x[-1, ], l_x_curr = l_x, acc = acc, acc_rate = acc_rate))
   }
 
-  return(list(x = x[-(1:(burn+1)), ], l_x_curr = l_x, acc = acc[-(1:burn+1)], acc_rate = acc_rate))
+  return(list(x = x[-seq(1,burn+1), ], l_x_curr = l_x, acc = acc[-seq(1,burn)], acc_rate = acc_rate))
 
 }
