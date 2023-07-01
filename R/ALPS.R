@@ -1160,3 +1160,4 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
               rwm_acc_rates = rwm_acc_rates,
               global_times = global_times))
 
+}
