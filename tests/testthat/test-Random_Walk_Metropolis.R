@@ -36,7 +36,8 @@ test_that("RWM works", {
                                  mu = rep(0, 20), scale = 5,
                                  S = 5,
                                  burn = 1,
-                                 silent = TRUE))
+                                 silent = TRUE) |>
+                 expect_warning())
   expect_silent(rwm_sampler_chain(lmvtnorm,
                                   mu = rep(0, 20), scale = rep(5,20),
                                   S = 5,
