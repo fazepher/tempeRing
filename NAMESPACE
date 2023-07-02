@@ -3,6 +3,7 @@
 export(ALPS_mh_chain)
 export(ALPS_rwm_chain)
 export(ALPS_rwm_leaner_chain)
+export(ALPS_rwm_leaner_chain_list)
 export(HAT_rwm_chain)
 export(PT_rwm_chain)
 export(ST_rwm_chain)

@@ -1072,6 +1072,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
   # Run Cycles
   i_cycle <- 1
   j_cycle <- 1
+  sequential_plan <- is(future::plan(), "sequential") # possible parallelism
   for(c in 1:Cycles){
 
     if(!silent & isTRUE(c %% floor(Cycles*0.05) == 0)){
@@ -1080,22 +1081,35 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
     }
 
     # Within Level Exploration (possible parallelism)
-    within_level_moves <- future.apply::future_mapply(
-      FUN = make_within_level_moves,
-      x_w = lapply(x, function(x_m) x_m[, i_cycle]),
-      l_w = l_x,
-      beta_w = beta_indexes[j_cycle, ],
-      scale_w = scale_list[k_indexes[j_cycle, ]],
-      sampler_w = sampler_list[k_indexes[j_cycle, ]],
-      u_w = u_lps[c] & (k_indexes[j_cycle, ] == K),
-      SIMPLIFY = FALSE,
-      future.seed = TRUE,
-      future.globals = c("Within_Moves","d"))
+    if(sequential_plan){
+      within_level_moves <- mapply(
+        FUN = make_within_level_moves,
+        x_w = lapply(x, function(x_m) x_m[, i_cycle]),
+        l_w = l_x,
+        beta_w = beta_indexes[j_cycle, ],
+        scale_w = scale_list[k_indexes[j_cycle, ]],
+        sampler_w = sampler_list[k_indexes[j_cycle, ]],
+        u_w = u_lps[c] & (k_indexes[j_cycle, ] == K),
+        SIMPLIFY = FALSE)
+    }else{
+      within_level_moves <- future.apply::future_mapply(
+        FUN = make_within_level_moves,
+        x_w = lapply(x, function(x_m) x_m[, i_cycle]),
+        l_w = l_x,
+        beta_w = beta_indexes[j_cycle, ],
+        scale_w = scale_list[k_indexes[j_cycle, ]],
+        sampler_w = sampler_list[k_indexes[j_cycle, ]],
+        u_w = u_lps[c] & (k_indexes[j_cycle, ] == K),
+        SIMPLIFY = FALSE,
+        future.seed = TRUE,
+        future.globals = c("Within_Moves","d"))
+    }
     for(m in 1:K){
       x[[m]][ , i_cycle + 1:Within_Moves] <- t(within_level_moves[[m]]$x)
       l_x[m] <- within_level_moves[[m]]$l_x_curr
       rwm_acc[[ k_indexes[j_cycle, m] ]][ , c] <- within_level_moves[[m]]$acc
     }
+
 
     i_cycle <- i_cycle + Within_Moves
 
