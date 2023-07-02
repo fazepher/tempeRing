@@ -7,8 +7,8 @@ get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
   bh <- beta_hat %||% 1
   if(optimize){
     optimizations <- lapply(mode_guess,
-                            function(m) optim(m, l_target, beta = bh, ..., method = method,
-                                              control = control_optim, hessian = TRUE))
+                            function(m) stats::optim(m, l_target, beta = bh, ..., method = method,
+                                                     control = control_optim, hessian = TRUE))
     if(verbose_optim){
       lapply(optimizations, function(o) c(o$convergence, o$counts)) |> print()
     }
@@ -16,7 +16,7 @@ get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
     mH <- lapply(optimizations, function(o) -o$hessian)
   }else{
     modes <- mode_guess
-    mH <- lapply(modes, function(m) -(optimHess(m, l_target, ...)))
+    mH <- lapply(modes, function(m) -(stats::optimHess(m, l_target, ...)))
   }
 
   l_target_modes <- vapply(modes, l_target, numeric(1), beta = 1, ...)
