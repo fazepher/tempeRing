@@ -175,9 +175,11 @@ attempt_quanta <- function(mode_info,
 attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
 
 
-  mod_1 <- modAssignment(x_1, beta_1, mode_info, assign_type = "euclidean")$A
+  mod_1 <- modAssignment_euclidean_cpp(x_1, beta_1, mode_info$w, mode_info$modes,
+                                       mode_info$L_inv, mode_info$ldet_L_inv)$A
   x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1]])
-  mod_quanta_1 <- modAssignment(x_quanta_1, beta_2, mode_info, assign_type = "euclidean")$A
+  mod_quanta_1 <- modAssignment_euclidean_cpp(x_quanta_1, beta_2, mode_info$w, mode_info$modes,
+                                              mode_info$L_inv, mode_info$ldet_L_inv)$A
 
   # Early exit if the transformation is not reversible
   if(mod_1 != mod_quanta_1){
@@ -186,9 +188,11 @@ attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l
                 "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
   }
 
-  mod_2 <- modAssignment(x_2, beta_2, mode_info, assign_type = "euclidean")$A
+  mod_2 <- modAssignment_euclidean_cpp(x_2, beta_2, mode_info$w, mode_info$modes,
+                                       mode_info$L_inv, mode_info$ldet_L_inv)$A
   x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2]])
-  mod_quanta_2 <- modAssignment(x_quanta_2, beta_1, mode_info, assign_type = "euclidean")$A
+  mod_quanta_2 <- modAssignment_euclidean_cpp(x_quanta_2, beta_1, mode_info$w, mode_info$modes,
+                                              mode_info$L_inv, mode_info$ldet_L_inv)$A
 
   # Early exit if the transformation is not reversible
   if(mod_2 != mod_quanta_2){

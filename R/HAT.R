@@ -40,7 +40,11 @@ get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
 
 modAssignment <- function(x, beta, HAT_info, assign_type){
   if(assign_type == "euclidean"){
-    modAssignment_euclidean(x, beta, HAT_info)
+    return(modAssignment_euclidean(x, beta, HAT_info))
+  }
+  if(assign_type == "euclidean_cpp"){
+   return(modAssignment_euclidean_cpp(x, beta, HAT_info$w, HAT_info$modes,
+                                      HAT_info$L_inv, HAT_info$ldet_L_inv))
   }
 }
 
@@ -66,6 +70,36 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
   # Assign the mode at beta and 1
   mod_beta <- modAssignment_euclidean(x, beta, HAT_info)
   mod_1 <- modAssignment_euclidean(x, 1, HAT_info)
+  l_mod <- HAT_info$l_target_modes[ mod_beta$A ]
+  if(is.na(mod_beta$lP_j) || is.na(mod_1$lP_j) || is.na(l_mod)){stop("Error")}
+
+  # Early exit if the assigned modes are the same
+  if(mod_beta$A == mod_1$A){
+    return(l_eval + (1-beta)*l_mod)
+  }
+
+  ## G Weight Preservation only when the assigned modes differ
+  l_corr_ctes <- 0.5*length(HAT_info$modes[[1]])*(log(2*pi) - log(beta))
+  l_approx_w <- mod_beta$lP_j - log(HAT_info$w[mod_beta$A])
+  l_G <- l_mod + l_corr_ctes + 1/HAT_info$hldetCov_inv[mod_beta$A] + l_approx_w
+  return(l_G)
+
+}
+
+lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
+
+  ## Basic Weight Preservation
+
+  # Early exit if beta is 1
+  l_eval <- ltemp_target(x, beta = beta, ...)
+  if(beta == 1){ return(l_eval) }
+
+
+  # Assign the mode at beta and 1
+  mod_beta <- modAssignment_euclidean_cpp(x, beta, HAT_info$w, HAT_info$modes,
+                                          HAT_info$L_inv, HAT_info$ldet_L_inv)
+  mod_1 <- modAssignment_euclidean_cpp(x, 1, HAT_info$w, HAT_info$modes,
+                                       HAT_info$L_inv, HAT_info$ldet_L_inv)
   l_mod <- HAT_info$l_target_modes[ mod_beta$A ]
   if(is.na(mod_beta$lP_j) || is.na(mod_1$lP_j) || is.na(l_mod)){stop("Error")}
 
