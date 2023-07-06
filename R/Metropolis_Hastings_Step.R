@@ -235,3 +235,33 @@ metropolis_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sam
                    do_checks = do_checks, full_return = full_return)
 
 }
+
+mh_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args = NULL,
+                                  lq_sampler = NULL, lq_sampler_args = NULL, do_checks = TRUE, full_return = TRUE){
+
+  x_prop <- do.call(sampler, c(list(x_curr), sampler_args))
+  l_prop <- l_target(x_prop, ...)
+
+  if(is.function(lq_sampler)){
+    lq_c2p <- do.call(lq_sampler, c(list(x_curr, x_prop), lq_sampler_args))
+    lq_p2c <- do.call(lq_sampler, c(list(x_prop, x_curr), lq_sampler_args))
+  }else{
+    lq_c2p <- 0
+    lq_p2c <- 0
+  }
+
+  results <- mh_step(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c,
+                     do_checks = do_checks, full_return = full_return)
+
+  return(results)
+
+}
+
+metropolis_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args,
+                                          do_checks = TRUE, full_return = TRUE){
+
+  mh_sampling_step_list(x_curr, l_curr, l_target, ...,
+                        sampler = sampler, sampler_args = sampler_args,
+                        do_checks = do_checks, full_return = full_return)
+
+}
