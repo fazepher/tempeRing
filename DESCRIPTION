@@ -31,6 +31,10 @@ Imports:
     future,
     future.apply,
     matrixStats,
+    Rcpp,
     rlang,
     stats
 VignetteBuilder: knitr
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo
