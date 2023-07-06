@@ -909,7 +909,7 @@ ALPS_mh_chain <- function(ltemp_target, ..., d,
 }
 
 #' @export
-ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
+ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., cpp = FALSE, HAT_info,
                                        beta_schedule, swap_type = "deo", quanta_levels = NULL,
                                        scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                                        x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL, jump_p = 0.7,
@@ -917,9 +917,11 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
                                        quanta_mode_info = NULL, silent = FALSE){
 
   #--- HAT use -------------
-  l_target <- lHAT_target
-  target_args <- c(list(HAT_info = HAT_info, ltemp_target = ltemp_target),
+  l_target <- lHAT_target_cpp
+  target_args <- c(list(ltemp_target = ltemp_target),
+                   "HAT_info" = rlang::dots_list(HAT_info),
                    rlang::dots_list(...))
+
 
   #--- Preparation -------------
 
@@ -931,44 +933,32 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
   odd_indices <- seq(1, K, by = 2)
   even_indices <- seq(2, K, by = 2)
 
-  # Leap-Point Sampler
-  lpsampler <- function(x_curr){
-    z <- sample(x = seq_along(HAT_info$w),size = 1, prob = HAT_info$w)
-    x_prop <- rmvtnorm_temp(n = 1, beta = beta_max, mu = HAT_info$modes[[z]],
-                            LChol_sigma = t(HAT_info$cholCov[[z]]))
-    return(x_prop)
-  }
-  lpsampler_q <- function(x_curr, x_prop){
-    n_modes <- length(HAT_info$w)
-    l_modes <- vapply(1:n_modes, function(m)
-      lmvtnorm_temp(x = x_prop, beta = beta_max, mu = HAT_info$modes[[m]],
-                    sigma_inv = HAT_info$mH[[m]], logdet_sigma = 2*HAT_info$half_l_detCov[[m]]) +
-        log(HAT_info$w[[m]]), FUN.VALUE = 1.0)
-
-    indmax <- which.max(l_modes)   ##### Create a stable evaluation of the log density.
-    comb <- exp(l_modes[-indmax]-l_modes[indmax])
-    return( l_modes[indmax] + log(1+sum(comb)) )
-
-  }
 
   # Within Level Moves Dispatcher
   make_within_level_moves <- function(x_w, l_w, beta_w, scale_w, sampler_w, u_w){
     if(u_w){
+      # Leap-Point Sampler
       lps_args_list <- list(x_0 = x_w, l_0 = l_w, beta = beta_w,
-                            mh_sampler = lpsampler, lq_mh = lpsampler_q,
+                            mh_sampler = lpsampler_cpp,
+                            other_sampler_args = c("beta_max" = beta_w,
+                                                   HAT_info[c("w","modes","L")]),
+                            lq_mh = lps_q_cpp,
+                            other_lq_args = c("beta_max" = beta_w,
+                                              HAT_info[c("w","modes","L_inv","ldet_L_inv")]),
                             S = Within_Moves, d = d, burn = 0, silent = TRUE) |>
         c("l_target" = l_target, target_args)
-      aux <- do.call(mh_sampler_leaner_chain, lps_args_list)
+      aux <- do.call(mh_sampler_leaner_chain_list, lps_args_list)
     }else{
+      # Regular RWM
       rwm_args_list <- list(x_0 = x_w, l_0 = l_w, beta = beta_w,
                             scale = scale_w, custom_rw_sampler = sampler_w,
                             S = Within_Moves, d = d, burn = 0, silent = TRUE) |>
         c("l_target" = l_target, target_args)
-      aux <- do.call(rwm_sampler_leaner_chain, rwm_args_list)
+      aux <- do.call(rwm_sampler_leaner_chain_list, rwm_args_list)
     }
     return(aux)
-
   }
+
 
   # QuanTA levels checking
   if(is.null(quanta_levels)){
@@ -1018,7 +1008,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
     sampler <- custom_rw_sampler %||%
       ifelse(d == 1,
              function(x, scale){ rnorm(n = 1, mean = x, sd = scale) },
-             function(x, scale){ rmvtnorm(n = 1, mu = x, sigma = scale) })
+             function(x, scale){ rmvtnorm_temp_cpp(n = 1, mu = x, sigma = scale) })
     sampler_list <- rep(list(sampler),K)
   }
 
@@ -1102,7 +1092,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
         u_w = u_lps[c] & (k_indexes[j_cycle, ] == K),
         SIMPLIFY = FALSE,
         future.seed = TRUE,
-        future.globals = c("Within_Moves","d"))
+        future.globals = c("Within_Moves","d","HAT_info"))
     }
     for(m in 1:K){
       x[[m]][ , i_cycle + 1:Within_Moves] <- t(within_level_moves[[m]]$x)
@@ -1175,3 +1165,4 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
               global_times = global_times))
 
 }
+
