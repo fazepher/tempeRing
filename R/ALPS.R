@@ -1034,7 +1034,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
     # (asplit for the matrix rows may also fail because it keeps them as arrays)
     l_0 <- numeric(K)
     for(m in 1:K){
-      l_0[m] <- do.call(l_target, c(list(x = x_0[ , k_0[m]], beta = b_0[m]), target_args))
+      l_0[m] <- do.call(l_target, c(list(x = x_0[ , m], beta = b_0[m]), target_args))
     }
   }
 
