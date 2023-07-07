@@ -1057,9 +1057,6 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
   beta_indexes[1, ] <- b_0
   l_x <- l_0
 
-  # Determine LPS cycles at coldest level
-  u_lps <- runif(Cycles) <= jump_p
-
 
   # Run Cycles
   i_cycle <- 1
@@ -1081,7 +1078,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
         beta_w = beta_indexes[j_cycle, ],
         scale_w = scale_list[k_indexes[j_cycle, ]],
         sampler_w = sampler_list[k_indexes[j_cycle, ]],
-        u_w = u_lps[c] & (k_indexes[j_cycle, ] == K),
+        u_w = (runif(1) <= jump_p) & (k_indexes[j_cycle, ] == K),
         SIMPLIFY = FALSE)
     }else{
       within_level_moves <- future.apply::future_mapply(
