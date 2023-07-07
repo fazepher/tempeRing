@@ -1156,8 +1156,8 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
   burn_window_k <- seq(1, burn_cycles*Temp_Moves + 1)
   global_times[3] <- Sys.time()
   return(list(x = lapply(x,function(x_m) x_m[,-burn_window]),
-              k_indexes = k_indexes[-burn_window_k],
-              beta_indexes =  beta_indexes[-burn_window_k],
+              k_indexes = k_indexes[-burn_window_k, ],
+              beta_indexes =  beta_indexes[-burn_window_k, ],
               swap_acc = swap_acc[,,-burn_window],
               swap_acc_rates = swap_acc_rates,
               rwm_acc = lapply(rwm_acc, function(moves) moves[,-burn_window]),
