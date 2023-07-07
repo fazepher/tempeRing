@@ -232,6 +232,26 @@ List modAssignment_euclidean_cpp(const NumericVector& x, double beta,
 }
 
 // [[Rcpp::export]]
+List modAssignment_mahalanobis_cpp(const NumericVector& x, double beta,
+                                   const NumericVector& l_target_modes, const List& modes,
+                                   const List& L_inv, int n_modes){
+
+  NumericVector half_maha(n_modes, 0.5);
+  for(int m = 0; m < n_modes; m++){
+    half_maha[m] *= mahalanobis_chol_cpp(x, modes[m], L_inv[m]);
+  }
+  int A_1 = which_max(l_target_modes - half_maha);
+  NumericVector G_x_beta_m = l_target_modes - beta*half_maha;
+  int A_beta = which_max(G_x_beta_m);
+
+  return List::create(Named("A_beta") = A_beta + 1,
+                      Named("A_1") = A_1 + 1,
+                      Named("l_target_mu") = l_target_modes[A_beta],
+                      Named("G_x_beta") = G_x_beta_m[A_beta]);
+
+}
+
+// [[Rcpp::export]]
 arma::vec lpsampler_cpp(const NumericVector& x_curr, double beta_max,
                         const NumericVector& w, const List& modes, const List& L){
 

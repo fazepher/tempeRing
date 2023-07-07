@@ -172,37 +172,51 @@ attempt_quanta <- function(mode_info,
 
 }
 
-attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
+attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...,
+                                pass_prev_mod_assignment = TRUE){
 
+  n_modes <- length(mode_info$w)
 
-  mod_1 <- modAssignment_euclidean_cpp(x_1, beta_1, mode_info$w, mode_info$modes,
-                                       mode_info$L_inv, mode_info$ldet_L_inv)$A
-  x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1]])
-  mod_quanta_1 <- modAssignment_euclidean_cpp(x_quanta_1, beta_2, mode_info$w, mode_info$modes,
-                                              mode_info$L_inv, mode_info$ldet_L_inv)$A
+  mod_1 <- modAssignment_mahalanobis_cpp(x_1, beta_1,
+                                         mode_info$l_target_modes, mode_info$modes,
+                                         mode_info$L_inv, n_modes)
+  x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1$A_beta]])
+  mod_quanta_1 <- modAssignment_mahalanobis_cpp(x_quanta_1, beta_2,
+                                                mode_info$l_target_modes, mode_info$modes,
+                                                mode_info$L_inv, n_modes)
 
   # Early exit if the transformation is not reversible
-  if(mod_1 != mod_quanta_1){
+  if(mod_1$A_beta != mod_quanta_1$A_beta){
     return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
                 "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
                 "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
   }
 
-  mod_2 <- modAssignment_euclidean_cpp(x_2, beta_2, mode_info$w, mode_info$modes,
-                                       mode_info$L_inv, mode_info$ldet_L_inv)$A
-  x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2]])
-  mod_quanta_2 <- modAssignment_euclidean_cpp(x_quanta_2, beta_1, mode_info$w, mode_info$modes,
-                                              mode_info$L_inv, mode_info$ldet_L_inv)$A
+  mod_2 <- modAssignment_mahalanobis_cpp(x_2, beta_2,
+                                         mode_info$l_target_modes, mode_info$modes,
+                                         mode_info$L_inv, n_modes)
+  x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2$A_beta]])
+  mod_quanta_2 <- modAssignment_mahalanobis_cpp(x_quanta_2, beta_1,
+                                                mode_info$l_target_modes, mode_info$modes,
+                                                mode_info$L_inv, n_modes)
 
   # Early exit if the transformation is not reversible
-  if(mod_2 != mod_quanta_2){
+  if(mod_2$A_beta != mod_quanta_2$A_beta){
     return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
                 "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
                 "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
   }
 
-  swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2), ...)),
-                do.call(l_target,c(list(x = x_quanta_2, beta = beta_1), ...)))
+  if(pass_prev_mod_assignment){
+    swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2,
+                                          prev_mod_assign_maha = mod_quanta_1), ...)),
+                  do.call(l_target,c(list(x = x_quanta_2, beta = beta_1,
+                                          prev_mod_assign_maha = mod_quanta_2), ...)))
+  }else{
+    swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2), ...)),
+                  do.call(l_target,c(list(x = x_quanta_2, beta = beta_1), ...)))
+  }
+
   x_quanta <- list(x_quanta_1, x_quanta_2)
 
   delta_l <- sum(swaped_l) - (l_1 + l_2)
@@ -438,7 +452,8 @@ alps_swap_move <- function(type = "naive", j_deo = NULL, quanta_levels = NULL, m
 
 alps_swap_move_list <- function(type = "naive", j_deo = NULL, quanta_levels, mode_info = NULL,
                                 x_curr, beta_curr, k_curr, l_curr, l_target, ...,
-                                K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL){
+                                K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL,
+                                pass_mod_assignment = TRUE){
 
   #--- Preparation -------------
   K <- K %||% length(k_curr)
@@ -500,7 +515,8 @@ alps_swap_move_list <- function(type = "naive", j_deo = NULL, quanta_levels, mod
                                    x_curr[[m_1]], x_curr[[m_2]],
                                    beta_curr[m_1], beta_curr[m_2],
                                    l_curr[m_1], l_curr[m_2],
-                                   l_target, ...)
+                                   l_target, ...,
+                                   pass_prev_mod_assignment = pass_mod_assignment)
       x_prop[m] <- nswap$x_prop
       x_next[m] <- nswap$x_next
     }else{

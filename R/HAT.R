@@ -46,6 +46,10 @@ modAssignment <- function(x, beta, HAT_info, assign_type){
    return(modAssignment_euclidean_cpp(x, beta, HAT_info$w, HAT_info$modes,
                                       HAT_info$L_inv, HAT_info$ldet_L_inv))
   }
+  if(assign_type == "mahalanobis_cpp"){
+    return(modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                                         HAT_info$L_inv, length(HAT_info$w)))
+  }
 }
 
 modAssignment_euclidean <- function(x, beta, HAT_info){
@@ -86,33 +90,28 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
 
 }
 
-lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
+lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE,
+                            prev_mod_assign_maha = NULL){
 
-  ## Basic Weight Preservation
+  # Standard power tempering
+  l_eval <- ltemp_target(x, beta = beta, ...)
 
   # Early exit if beta is 1
-  l_eval <- ltemp_target(x, beta = beta, ...)
-  if(beta == 1){ return(l_eval) }
-
-
-  # Assign the mode at beta and 1
-  mod_beta <- modAssignment_euclidean_cpp(x, beta, HAT_info$w, HAT_info$modes,
-                                          HAT_info$L_inv, HAT_info$ldet_L_inv)
-  mod_1 <- modAssignment_euclidean_cpp(x, 1, HAT_info$w, HAT_info$modes,
-                                       HAT_info$L_inv, HAT_info$ldet_L_inv)
-  l_mod <- HAT_info$l_target_modes[ mod_beta$A ]
-  if(is.na(mod_beta$lP_j) || is.na(mod_1$lP_j) || is.na(l_mod)){stop("Error")}
-
-  # Early exit if the assigned modes are the same
-  if(mod_beta$A == mod_1$A){
-    return(l_eval + (1-beta)*l_mod)
+  if(beta == 1){
+    return(l_eval)
   }
 
-  ## G Weight Preservation only when the assigned modes differ
-  l_corr_ctes <- 0.5*length(HAT_info$modes[[1]])*(log(2*pi) - log(beta))
-  l_approx_w <- mod_beta$lP_j - log(HAT_info$w[mod_beta$A])
-  l_G <- l_mod + l_corr_ctes + 1/HAT_info$hldetCov_inv[mod_beta$A] + l_approx_w
-  return(l_G)
+  # Mode assignment
+  mod_assign_maha <- prev_mod_assign_maha %||%
+    modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                                  HAT_info$L_inv, length(HAT_info$w))
+  # If mode assignment is the same, we do BHAT
+  if(mod_assign_maha$A_beta == mod_assign_maha$A_1){
+    return(l_eval + (1-beta)*mod_assign_maha$l_target_mu)
+  }
+  # Otherwise we use function G
+  return(mod_assign_maha$G_x_beta)
+
 
 }
 

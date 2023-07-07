@@ -909,12 +909,14 @@ ALPS_mh_chain <- function(ltemp_target, ..., d,
 }
 
 #' @export
-ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., cpp = FALSE, HAT_info,
+ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
                                        beta_schedule, swap_type = "deo", quanta_levels = NULL,
                                        scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
                                        x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL, jump_p = 0.7,
                                        k_0 = NULL, custom_rw_sampler = NULL, target_names = NULL, d = NULL,
-                                       quanta_mode_info = NULL, silent = FALSE){
+                                       quanta_mode_info = NULL,
+                                       quanta_pass_prev_mod_assign = TRUE,
+                                       silent = FALSE){
 
   #--- HAT use -------------
   l_target <- lHAT_target_cpp
@@ -1113,7 +1115,8 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., cpp = FALSE, HAT_info,
                              type = swap_type, j_deo = ifelse(Temp_Moves == 1, c, t),
                              l_target, target_args, quanta_levels = quanta_levels,
                              mode_info = quanta_mode_info, K = K, d = d,
-                             odd_indices = odd_indices, even_indices = even_indices)
+                             odd_indices = odd_indices, even_indices = even_indices,
+                             pass_mod_assignment = quanta_pass_prev_mod_assign)
       swap_moves <- do.call(alps_swap_move_list, swap_arguments)
 
       swap_acc[, t, c] <- swap_moves$acc

@@ -177,6 +177,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// modAssignment_mahalanobis_cpp
+List modAssignment_mahalanobis_cpp(const NumericVector& x, double beta, const NumericVector& l_target_modes, const List& modes, const List& L_inv, int n_modes);
+RcppExport SEXP _tempeRing_modAssignment_mahalanobis_cpp(SEXP xSEXP, SEXP betaSEXP, SEXP l_target_modesSEXP, SEXP modesSEXP, SEXP L_invSEXP, SEXP n_modesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type l_target_modes(l_target_modesSEXP);
+    Rcpp::traits::input_parameter< const List& >::type modes(modesSEXP);
+    Rcpp::traits::input_parameter< const List& >::type L_inv(L_invSEXP);
+    Rcpp::traits::input_parameter< int >::type n_modes(n_modesSEXP);
+    rcpp_result_gen = Rcpp::wrap(modAssignment_mahalanobis_cpp(x, beta, l_target_modes, modes, L_inv, n_modes));
+    return rcpp_result_gen;
+END_RCPP
+}
 // lpsampler_cpp
 arma::vec lpsampler_cpp(const NumericVector& x_curr, double beta_max, const NumericVector& w, const List& modes, const List& L);
 RcppExport SEXP _tempeRing_lpsampler_cpp(SEXP x_currSEXP, SEXP beta_maxSEXP, SEXP wSEXP, SEXP modesSEXP, SEXP LSEXP) {
@@ -222,6 +238,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tempeRing_lmixhatsn_cpp", (DL_FUNC) &_tempeRing_lmixhatsn_cpp, 5},
     {"_tempeRing_ulmixhatsn_temp_cpp", (DL_FUNC) &_tempeRing_ulmixhatsn_temp_cpp, 6},
     {"_tempeRing_modAssignment_euclidean_cpp", (DL_FUNC) &_tempeRing_modAssignment_euclidean_cpp, 6},
+    {"_tempeRing_modAssignment_mahalanobis_cpp", (DL_FUNC) &_tempeRing_modAssignment_mahalanobis_cpp, 6},
     {"_tempeRing_lpsampler_cpp", (DL_FUNC) &_tempeRing_lpsampler_cpp, 5},
     {"_tempeRing_lps_q_cpp", (DL_FUNC) &_tempeRing_lps_q_cpp, 7},
     {NULL, NULL, 0}
