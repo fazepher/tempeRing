@@ -6,6 +6,11 @@ using namespace arma;
 
 static double const logsqrt_tau = 0.5*log(arma::datum::tau);
 
+
+////----Utilities----////
+
+
+
 // [[Rcpp::export]]
 double logsumexp_cpp(const NumericVector& lterms){
 
@@ -55,6 +60,12 @@ double mahalanobis_chol_cpp(const NumericVector& x, const NumericVector& mu,
   return sqrt(maha_squared);
 
 }
+
+
+
+////----Distributions----////
+
+
 
 // [[Rcpp::export]]
 double lmvtnorm_temp_chol_cpp(const NumericVector& x, const NumericVector& mu,
@@ -214,6 +225,54 @@ double ulmixhatsn_temp_cpp(const NumericVector& x, double beta,
   return beta*lmixhatsn_cpp(x, w, mu, omega, alpha);
 
 }
+
+
+
+////----Metropolis-Hastings----////
+
+
+// [[Rcpp::export]]
+List mh_step_cpp(const NumericVector& x_curr, const NumericVector& x_prop,
+                 double l_curr, double l_prop, double lq_c2p = 0.0, double lq_p2c = 0.0){
+
+  int d = x_curr.size();
+  NumericVector x_next(d);
+  double l_next;
+
+  double l_ratio = (l_prop + lq_p2c) - (l_curr + lq_c2p);
+
+  double exp_l_ratio = exp(l_ratio);
+  double alpha = exp_l_ratio < 1.0 ? exp_l_ratio : 1.0;
+
+  bool accepted = runif(1)[0] <= alpha;
+
+  if(accepted){
+    x_next = x_prop;
+    l_next = l_prop;
+  }else{
+    x_next = x_curr;
+    l_next = l_curr;
+  }
+
+
+  return List::create(Named("x_next") = x_next,
+                      Named("l_next") = l_next,
+                      Named("accepted") = accepted,
+                      Named("alpha") = alpha,
+                      Named("l_ratio") = l_ratio);
+}
+
+// [[Rcpp::export]]
+List metropolis_step_cpp(const NumericVector& x_curr, const NumericVector& x_prop,
+                         double l_curr, double l_prop){
+  return mh_step_cpp(x_curr, x_prop, l_curr, l_prop);
+}
+
+
+
+////----ALPS----////
+
+
 
 // [[Rcpp::export]]
 List modAssignment_euclidean_cpp(const NumericVector& x, double beta,

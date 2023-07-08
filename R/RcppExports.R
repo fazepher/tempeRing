@@ -41,6 +41,14 @@ ulmixhatsn_temp_cpp <- function(x, beta, w, mu, omega, alpha) {
     .Call(`_tempeRing_ulmixhatsn_temp_cpp`, x, beta, w, mu, omega, alpha)
 }
 
+mh_step_cpp <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0.0, lq_p2c = 0.0) {
+    .Call(`_tempeRing_mh_step_cpp`, x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c)
+}
+
+metropolis_step_cpp <- function(x_curr, x_prop, l_curr, l_prop) {
+    .Call(`_tempeRing_metropolis_step_cpp`, x_curr, x_prop, l_curr, l_prop)
+}
+
 modAssignment_euclidean_cpp <- function(x, beta, w, modes, L_inv, ldet_L_inv) {
     .Call(`_tempeRing_modAssignment_euclidean_cpp`, x, beta, w, modes, L_inv, ldet_L_inv)
 }

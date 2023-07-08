@@ -223,6 +223,7 @@ mh_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sampler_arg
 
 }
 
+
 #' @rdname mh_step
 #'
 #' @export
@@ -237,7 +238,7 @@ metropolis_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sam
 }
 
 mh_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args = NULL,
-                                  lq_sampler = NULL, lq_sampler_args = NULL, do_checks = TRUE, full_return = TRUE){
+                                  lq_sampler = NULL, lq_sampler_args = NULL){
 
   x_prop <- do.call(sampler, c(list(x_curr), sampler_args))
   l_prop <- l_target(x_prop, ...)
@@ -250,18 +251,13 @@ mh_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sample
     lq_p2c <- 0
   }
 
-  results <- mh_step(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c,
-                     do_checks = do_checks, full_return = full_return)
-
-  return(results)
+  return(mh_step_cpp(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c))
 
 }
 
-metropolis_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args,
-                                          do_checks = TRUE, full_return = TRUE){
+metropolis_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args){
 
   mh_sampling_step_list(x_curr, l_curr, l_target, ...,
-                        sampler = sampler, sampler_args = sampler_args,
-                        do_checks = do_checks, full_return = full_return)
+                        sampler = sampler, sampler_args = sampler_args)
 
 }

@@ -161,6 +161,36 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mh_step_cpp
+List mh_step_cpp(const NumericVector& x_curr, const NumericVector& x_prop, double l_curr, double l_prop, double lq_c2p, double lq_p2c);
+RcppExport SEXP _tempeRing_mh_step_cpp(SEXP x_currSEXP, SEXP x_propSEXP, SEXP l_currSEXP, SEXP l_propSEXP, SEXP lq_c2pSEXP, SEXP lq_p2cSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type x_curr(x_currSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type x_prop(x_propSEXP);
+    Rcpp::traits::input_parameter< double >::type l_curr(l_currSEXP);
+    Rcpp::traits::input_parameter< double >::type l_prop(l_propSEXP);
+    Rcpp::traits::input_parameter< double >::type lq_c2p(lq_c2pSEXP);
+    Rcpp::traits::input_parameter< double >::type lq_p2c(lq_p2cSEXP);
+    rcpp_result_gen = Rcpp::wrap(mh_step_cpp(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c));
+    return rcpp_result_gen;
+END_RCPP
+}
+// metropolis_step_cpp
+List metropolis_step_cpp(const NumericVector& x_curr, const NumericVector& x_prop, double l_curr, double l_prop);
+RcppExport SEXP _tempeRing_metropolis_step_cpp(SEXP x_currSEXP, SEXP x_propSEXP, SEXP l_currSEXP, SEXP l_propSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type x_curr(x_currSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type x_prop(x_propSEXP);
+    Rcpp::traits::input_parameter< double >::type l_curr(l_currSEXP);
+    Rcpp::traits::input_parameter< double >::type l_prop(l_propSEXP);
+    rcpp_result_gen = Rcpp::wrap(metropolis_step_cpp(x_curr, x_prop, l_curr, l_prop));
+    return rcpp_result_gen;
+END_RCPP
+}
 // modAssignment_euclidean_cpp
 List modAssignment_euclidean_cpp(const NumericVector& x, double beta, const NumericVector& w, const List& modes, const List& L_inv, const NumericVector& ldet_L_inv);
 RcppExport SEXP _tempeRing_modAssignment_euclidean_cpp(SEXP xSEXP, SEXP betaSEXP, SEXP wSEXP, SEXP modesSEXP, SEXP L_invSEXP, SEXP ldet_L_invSEXP) {
@@ -237,6 +267,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tempeRing_lhatsn_cpp", (DL_FUNC) &_tempeRing_lhatsn_cpp, 4},
     {"_tempeRing_lmixhatsn_cpp", (DL_FUNC) &_tempeRing_lmixhatsn_cpp, 5},
     {"_tempeRing_ulmixhatsn_temp_cpp", (DL_FUNC) &_tempeRing_ulmixhatsn_temp_cpp, 6},
+    {"_tempeRing_mh_step_cpp", (DL_FUNC) &_tempeRing_mh_step_cpp, 6},
+    {"_tempeRing_metropolis_step_cpp", (DL_FUNC) &_tempeRing_metropolis_step_cpp, 4},
     {"_tempeRing_modAssignment_euclidean_cpp", (DL_FUNC) &_tempeRing_modAssignment_euclidean_cpp, 6},
     {"_tempeRing_modAssignment_mahalanobis_cpp", (DL_FUNC) &_tempeRing_modAssignment_mahalanobis_cpp, 6},
     {"_tempeRing_lpsampler_cpp", (DL_FUNC) &_tempeRing_lpsampler_cpp, 5},
