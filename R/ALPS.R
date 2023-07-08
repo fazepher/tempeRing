@@ -915,8 +915,9 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
                                        x_0 = NULL, x_0_u = 2, l_0 = NULL, seed = NULL, jump_p = 0.7,
                                        k_0 = NULL, custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                                        quanta_mode_info = NULL,
-                                       quanta_pass_prev_mod_assign = TRUE,
+                                       quanta_pass_prev_mod_assign = TRUE, start_deo_odd = TRUE,
                                        silent = FALSE){
+
 
   #--- HAT use -------------
   l_target <- lHAT_target_cpp
@@ -1062,6 +1063,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
   i_cycle <- 1
   j_cycle <- 1
   sequential_plan <- is(future::plan(), "sequential") # possible parallelism
+  current_deo_odd <- start_deo_odd
   for(c in 1:Cycles){
 
     if(!silent & isTRUE(c %% floor(Cycles*0.05) == 0)){
@@ -1109,12 +1111,13 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
                              l_curr = l_x,
                              beta_curr = beta_indexes[j_cycle, ],
                              k_curr = k_indexes[j_cycle, ],
-                             type = swap_type, j_deo = ifelse(Temp_Moves == 1, c, t),
+                             type = swap_type, deo_odd = current_deo_odd,
                              l_target, target_args, quanta_levels = quanta_levels,
                              mode_info = quanta_mode_info, K = K, d = d,
                              odd_indices = odd_indices, even_indices = even_indices,
                              pass_mod_assignment = quanta_pass_prev_mod_assign)
       swap_moves <- do.call(alps_swap_move_list, swap_arguments)
+      current_deo_odd <- !current_deo_odd
 
       swap_acc[, t, c] <- swap_moves$acc
       l_x <- swap_moves$l_next
@@ -1149,7 +1152,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
     return(mget(c("x","k_indexes","beta_indexes",
                   "swap_acc","swap_acc_rates",
                   "rwm_acc","rwm_acc_rates",
-                  "global_times")))
+                  "global_times","current_deo_odd")))
   }
 
   burn_window <- seq(1, burn_cycles + 1)
@@ -1162,7 +1165,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
               swap_acc_rates = swap_acc_rates,
               rwm_acc = lapply(rwm_acc, function(moves) moves[,-burn_window]),
               rwm_acc_rates = rwm_acc_rates,
-              global_times = global_times))
+              global_times = global_times, current_deo_odd = current_deo_odd))
 
 }
 

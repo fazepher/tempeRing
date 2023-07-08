@@ -450,7 +450,7 @@ alps_swap_move <- function(type = "naive", j_deo = NULL, quanta_levels = NULL, m
 
 }
 
-alps_swap_move_list <- function(type = "naive", j_deo = NULL, quanta_levels, mode_info = NULL,
+alps_swap_move_list <- function(type = "naive", deo_odd = TRUE, quanta_levels, mode_info = NULL,
                                 x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                                 K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL,
                                 pass_mod_assignment = TRUE){
@@ -484,20 +484,9 @@ alps_swap_move_list <- function(type = "naive", j_deo = NULL, quanta_levels, mod
       even_indices <- even_indices[-K/2]
     }
 
-    # SEO chooses at random, DEO chooses deterministically
-    if(type == "seo"){
-      if(runif(1) <= 0.5){
-        b_1 <- odd_indices
-      }else{
-        b_1 <- even_indices
-      }
-    }else{
-      if(j_deo %% 2 == 1){
-        b_1 <- odd_indices
-      }else{
-        b_1 <- even_indices
-      }
-    }
+    # DEO chooses deterministically, SEO chooses at random
+    odd_swap <- if(type == "deo"){ deo_odd }else{ runif(1) <= 0.5 }
+    b_1 <- if(odd_swap){ odd_indices }else{ even_indices }
 
   }
   b_2 <- b_1 + 1
