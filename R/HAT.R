@@ -90,30 +90,30 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
 
 }
 
-lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE,
-                            prev_mod_assign_maha = NULL){
+lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
 
   # Standard power tempering
   l_eval <- ltemp_target(x, beta = beta, ...)
-
-  # Early exit if beta is 1
-  if(beta == 1){
-    return(l_eval)
-  }
 
   # Mode assignment
   mod_assign_maha <- prev_mod_assign_maha %||%
     modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
                                   HAT_info$L_inv, length(HAT_info$w))
+  # Early exit if beta is 1
+  if(beta == 1){
+    return(l_eval)
+  }
+
   # If mode assignment is the same, we do BHAT
   if(mod_assign_maha$A_beta == mod_assign_maha$A_1){
     return(l_eval + (1-beta)*mod_assign_maha$l_target_mu)
   }
+
   # Otherwise we use function G
   return(mod_assign_maha$G_x_beta)
 
-
 }
+
 
 #' @export
 HAT_rwm_chain <- function(ltemp_target, ..., HAT_info,
