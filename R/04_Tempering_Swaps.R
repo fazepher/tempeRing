@@ -370,11 +370,11 @@ attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l
 
   n_modes <- length(mode_info$w)
 
-  mod_1 <- modAssignment_mahalanobis_cpp(x_1, beta_1,
+  mod_1 <- modAssignment_cpp(x_1, beta_1,
                                          mode_info$l_target_modes, mode_info$modes,
                                          mode_info$L_inv, n_modes)
   x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1$A_beta]])
-  mod_quanta_1 <- modAssignment_mahalanobis_cpp(x_quanta_1, beta_2,
+  mod_quanta_1 <- modAssignment_cpp(x_quanta_1, beta_2,
                                                 mode_info$l_target_modes, mode_info$modes,
                                                 mode_info$L_inv, n_modes)
 
@@ -385,11 +385,11 @@ attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l
                 "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
   }
 
-  mod_2 <- modAssignment_mahalanobis_cpp(x_2, beta_2,
+  mod_2 <- modAssignment_cpp(x_2, beta_2,
                                          mode_info$l_target_modes, mode_info$modes,
                                          mode_info$L_inv, n_modes)
   x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2$A_beta]])
-  mod_quanta_2 <- modAssignment_mahalanobis_cpp(x_quanta_2, beta_1,
+  mod_quanta_2 <- modAssignment_cpp(x_quanta_2, beta_1,
                                                 mode_info$l_target_modes, mode_info$modes,
                                                 mode_info$L_inv, n_modes)
 
@@ -512,11 +512,11 @@ attempt_quanta_list_byprod <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1,
 
   n_modes <- length(mode_info$w)
 
-  mod_1 <- modAssignment_mahalanobis_cpp(x_1, beta_1,
+  mod_1 <- modAssignment_cpp(x_1, beta_1,
                                          mode_info$l_target_modes, mode_info$modes,
                                          mode_info$L_inv, n_modes)
   x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1$A_beta]])
-  mod_quanta_1 <- modAssignment_mahalanobis_cpp(x_quanta_1, beta_2,
+  mod_quanta_1 <- modAssignment_cpp(x_quanta_1, beta_2,
                                                 mode_info$l_target_modes, mode_info$modes,
                                                 mode_info$L_inv, n_modes)
 
@@ -528,11 +528,11 @@ attempt_quanta_list_byprod <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1,
                 "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
   }
 
-  mod_2 <- modAssignment_mahalanobis_cpp(x_2, beta_2,
+  mod_2 <- modAssignment_cpp(x_2, beta_2,
                                          mode_info$l_target_modes, mode_info$modes,
                                          mode_info$L_inv, n_modes)
   x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2$A_beta]])
-  mod_quanta_2 <- modAssignment_mahalanobis_cpp(x_quanta_2, beta_1,
+  mod_quanta_2 <- modAssignment_cpp(x_quanta_2, beta_1,
                                                 mode_info$l_target_modes, mode_info$modes,
                                                 mode_info$L_inv, n_modes)
 

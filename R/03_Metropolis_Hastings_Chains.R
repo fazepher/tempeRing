@@ -451,9 +451,9 @@ rwm_sampler_leaner_chain_list <- function(l_target, ...,
 
   # Run iterations
   for(s in 1:S){
-    rwm_step <- metropolis_sampling_step_list(x[s, ], l_x, l_target, ...,
-                                              sampler = sampler,
-                                              sampler_args = c(list(scale), more_sampler_args))
+    rwm_step <- metropolis_sampling_step_cpp(x[s, ], l_x, l_target, ...,
+                                             sampler = sampler,
+                                             sampler_args = c(list(scale), more_sampler_args))
     x[s+1, ] <- rwm_step$x_next
     l_x <- rwm_step$l_next
     acc[s] <- rwm_step$accepted
@@ -515,7 +515,7 @@ mh_sampler_leaner_chain_list <- function(l_target, ...,
 
   # Run iterations
   for(s in 1:S){
-    rwm_step <- mh_sampling_step_list(x_curr = x[s, ], l_curr = l_x,
+    rwm_step <- mh_sampling_step_cpp(x_curr = x[s, ], l_curr = l_x,
                                       l_target, ...,
                                       sampler = mh_sampler, sampler_args = other_sampler_args,
                                       lq_sampler = lq_mh, lq_sampler_args = other_lq_args)
