@@ -191,25 +191,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// modAssignment_euclidean_cpp
-List modAssignment_euclidean_cpp(const NumericVector& x, double beta, const NumericVector& w, const List& modes, const List& L_inv, const NumericVector& ldet_L_inv);
-RcppExport SEXP _tempeRing_modAssignment_euclidean_cpp(SEXP xSEXP, SEXP betaSEXP, SEXP wSEXP, SEXP modesSEXP, SEXP L_invSEXP, SEXP ldet_L_invSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type w(wSEXP);
-    Rcpp::traits::input_parameter< const List& >::type modes(modesSEXP);
-    Rcpp::traits::input_parameter< const List& >::type L_inv(L_invSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type ldet_L_inv(ldet_L_invSEXP);
-    rcpp_result_gen = Rcpp::wrap(modAssignment_euclidean_cpp(x, beta, w, modes, L_inv, ldet_L_inv));
-    return rcpp_result_gen;
-END_RCPP
-}
-// modAssignment_mahalanobis_cpp
-List modAssignment_mahalanobis_cpp(const NumericVector& x, double beta, const NumericVector& l_target_modes, const List& modes, const List& L_inv, int n_modes);
-RcppExport SEXP _tempeRing_modAssignment_mahalanobis_cpp(SEXP xSEXP, SEXP betaSEXP, SEXP l_target_modesSEXP, SEXP modesSEXP, SEXP L_invSEXP, SEXP n_modesSEXP) {
+// modAssignment_cpp
+List modAssignment_cpp(const NumericVector& x, double beta, const NumericVector& l_target_modes, const List& modes, const List& L_inv, int n_modes);
+RcppExport SEXP _tempeRing_modAssignment_cpp(SEXP xSEXP, SEXP betaSEXP, SEXP l_target_modesSEXP, SEXP modesSEXP, SEXP L_invSEXP, SEXP n_modesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -219,7 +203,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const List& >::type modes(modesSEXP);
     Rcpp::traits::input_parameter< const List& >::type L_inv(L_invSEXP);
     Rcpp::traits::input_parameter< int >::type n_modes(n_modesSEXP);
-    rcpp_result_gen = Rcpp::wrap(modAssignment_mahalanobis_cpp(x, beta, l_target_modes, modes, L_inv, n_modes));
+    rcpp_result_gen = Rcpp::wrap(modAssignment_cpp(x, beta, l_target_modes, modes, L_inv, n_modes));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -269,8 +253,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tempeRing_ulmixhatsn_temp_cpp", (DL_FUNC) &_tempeRing_ulmixhatsn_temp_cpp, 6},
     {"_tempeRing_mh_step_cpp", (DL_FUNC) &_tempeRing_mh_step_cpp, 6},
     {"_tempeRing_metropolis_step_cpp", (DL_FUNC) &_tempeRing_metropolis_step_cpp, 4},
-    {"_tempeRing_modAssignment_euclidean_cpp", (DL_FUNC) &_tempeRing_modAssignment_euclidean_cpp, 6},
-    {"_tempeRing_modAssignment_mahalanobis_cpp", (DL_FUNC) &_tempeRing_modAssignment_mahalanobis_cpp, 6},
+    {"_tempeRing_modAssignment_cpp", (DL_FUNC) &_tempeRing_modAssignment_cpp, 6},
     {"_tempeRing_lpsampler_cpp", (DL_FUNC) &_tempeRing_lpsampler_cpp, 5},
     {"_tempeRing_lps_q_cpp", (DL_FUNC) &_tempeRing_lps_q_cpp, 7},
     {NULL, NULL, 0}

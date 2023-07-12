@@ -44,13 +44,9 @@ modAssignment <- function(x, beta, HAT_info, assign_type){
   if(assign_type == "euclidean"){
     return(modAssignment_euclidean(x, beta, HAT_info))
   }
-  if(assign_type == "euclidean_cpp"){
-   return(modAssignment_euclidean_cpp(x, beta, HAT_info$w, HAT_info$modes,
-                                      HAT_info$L_inv, HAT_info$ldet_L_inv))
-  }
-  if(assign_type == "mahalanobis_cpp"){
-    return(modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
-                                         HAT_info$L_inv, length(HAT_info$w)))
+  if(assign_type == "cpp"){
+    return(modAssignment_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                             HAT_info$L_inv, length(HAT_info$w)))
   }
 }
 
@@ -113,6 +109,7 @@ HAT_rwm_chain <- function(ltemp_target, ..., HAT_info,
 }
 
 ####--- Llama a C++ interno ---####
+
 lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
 
   # Standard power tempering
@@ -120,8 +117,8 @@ lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assig
 
   # Mode assignment
   mod_assign_maha <- prev_mod_assign_maha %||%
-    modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
-                                  HAT_info$L_inv, length(HAT_info$w))
+    modAssignment_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                      HAT_info$L_inv, length(HAT_info$w))
   # Early exit if beta is 1
   if(beta == 1){
     return(l_eval)
@@ -145,8 +142,8 @@ lHAT_target_byprod_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mo
 
   # Mode assignment
   mod_assign_maha <- prev_mod_assign_maha %||%
-    modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
-                                  HAT_info$L_inv, length(HAT_info$w))
+    modAssignment_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                      HAT_info$L_inv, length(HAT_info$w))
   by_prod <- unlist(mod_assign_maha, use.names = FALSE)
 
   # Early exit if beta is 1

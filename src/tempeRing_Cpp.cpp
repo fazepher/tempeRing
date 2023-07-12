@@ -273,25 +273,9 @@ List metropolis_step_cpp(const NumericVector& x_curr, const NumericVector& x_pro
 
 
 // [[Rcpp::export]]
-List modAssignment_euclidean_cpp(const NumericVector& x, double beta,
-                                 const NumericVector& w, const List& modes,
-                                 const List& L_inv, const NumericVector& ldet_L_inv){
-
-  int n_modes = w.size();
-  NumericVector lp_m = log(w);
-  for(int m = 0; m < n_modes; m++){
-    lp_m[m] += lmvtnorm_temp_chol_cpp(x, modes[m], beta, L_inv[m], ldet_L_inv[m]);
-  }
-  int A = which_max(lp_m);
-
-  return List::create(Named("A") = A + 1, Named("lP_j") = lp_m[A]);
-
-}
-
-// [[Rcpp::export]]
-List modAssignment_mahalanobis_cpp(const NumericVector& x, double beta,
-                                   const NumericVector& l_target_modes, const List& modes,
-                                   const List& L_inv, int n_modes){
+List modAssignment_cpp(const NumericVector& x, double beta,
+                       const NumericVector& l_target_modes, const List& modes,
+                       const List& L_inv, int n_modes){
 
   NumericVector half_maha(n_modes, 0.5);
   for(int m = 0; m < n_modes; m++){

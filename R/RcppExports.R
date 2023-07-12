@@ -49,12 +49,8 @@ metropolis_step_cpp <- function(x_curr, x_prop, l_curr, l_prop) {
     .Call(`_tempeRing_metropolis_step_cpp`, x_curr, x_prop, l_curr, l_prop)
 }
 
-modAssignment_euclidean_cpp <- function(x, beta, w, modes, L_inv, ldet_L_inv) {
-    .Call(`_tempeRing_modAssignment_euclidean_cpp`, x, beta, w, modes, L_inv, ldet_L_inv)
-}
-
-modAssignment_mahalanobis_cpp <- function(x, beta, l_target_modes, modes, L_inv, n_modes) {
-    .Call(`_tempeRing_modAssignment_mahalanobis_cpp`, x, beta, l_target_modes, modes, L_inv, n_modes)
+modAssignment_cpp <- function(x, beta, l_target_modes, modes, L_inv, n_modes) {
+    .Call(`_tempeRing_modAssignment_cpp`, x, beta, l_target_modes, modes, L_inv, n_modes)
 }
 
 lpsampler_cpp <- function(x_curr, beta_max, w, modes, L) {
