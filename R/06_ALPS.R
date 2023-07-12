@@ -1,4 +1,6 @@
 
+####--- Original ---####
+
 #' @export
 ALPS_rwm_chain <- function(ltemp_target, ..., HAT = TRUE, HAT_info,
                            beta_schedule, swap_type = "deo", quanta_levels = NULL,
@@ -908,6 +910,7 @@ ALPS_mh_chain <- function(ltemp_target, ..., d,
 
 }
 
+####--- Llama a C++ interno ---####
 #' @export
 ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
                                        beta_schedule, swap_type = "deo", quanta_levels = NULL,
@@ -1169,6 +1172,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
 
 }
 
+####--- Byproduct (FALLANDO) ---####
 ALPS_rwm_leaner_chain_list_byprod <- function(ltemp_target, ..., HAT_info,
                                               beta_schedule, swap_type = "deo", quanta_levels = NULL,
                                               scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
