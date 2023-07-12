@@ -64,10 +64,10 @@ test_that("Metropolis-Hastings sampling step works for basic distributions", {
     l_test <- dnorm(x_test, mean = mu_test, sd = sd_test, log = TRUE)
     x_next_test <- numeric(n_test)
     for(s in 1:n_test){
-      x_next_test[s] <- mh_sampling_step_list(x_test[s], l_test[s], l_target = dnorm,
-                                              mean = mu_test, sd = sd_test, log = TRUE,
-                                              sampler = function(x_c){
-                                                rnorm(1, mean = x_c, sd = 2.38*sd_test)})$x_next
+      x_next_test[s] <- mh_sampling_step_cpp(x_test[s], l_test[s], l_target = dnorm,
+                                             mean = mu_test, sd = sd_test, log = TRUE,
+                                             sampler = function(x_c){
+                                               rnorm(1, mean = x_c, sd = 2.38*sd_test)})$x_next
     }
 
     shapiro.test(x_next_test)$p.value > 0.025
@@ -91,17 +91,17 @@ test_that("Metropolis-Hastings sampling step works for basic distributions", {
     p_next_test <- numeric(n_test)
     for(s in 1:n_test){
       l_curr <- l_target_test(p_test[s], y = y_test[s])
-      p_curr_test <- metropolis_sampling_step_list(p_test[s], l_curr,
-                                                   l_target_test, y = y_test[s],
-                                                   sampler = function(p_c){
-                                                     rnorm(1, mean = p_c, sd = 0.25)
-                                                   })$x_next
+      p_curr_test <- metropolis_sampling_step_cpp(p_test[s], l_curr,
+                                                  l_target_test, y = y_test[s],
+                                                  sampler = function(p_c){
+                                                    rnorm(1, mean = p_c, sd = 0.25)
+                                                  })$x_next
       l_curr <- l_target_test(p_curr_test, y = y_test[s])
-      p_next_test[s] <- metropolis_sampling_step_list(p_curr_test, l_curr,
-                                                      l_target_test, y = y_test[s],
-                                                      sampler = function(p_c){
-                                                        rnorm(1, mean = p_c, sd = 0.25)
-                                                      })$x_next
+      p_next_test[s] <- metropolis_sampling_step_cpp(p_curr_test, l_curr,
+                                                     l_target_test, y = y_test[s],
+                                                     sampler = function(p_c){
+                                                       rnorm(1, mean = p_c, sd = 0.25)
+                                                     })$x_next
     }
 
     ks.test(p_post_test, p_next_test)$p.value > 0.025
