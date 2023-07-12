@@ -24,10 +24,11 @@ st_temp_step <- function(k_curr, x_curr, l_curr, l_target, ...,
     return(list("acc" = FALSE, "k_next" = k_curr, "l_next" = l_curr))
   }
 
+####--- Original ---####
 
+quanta_transformation <- function(x, beta_1, beta_2, mode){
+  sqrt(beta_1/beta_2)*(x - mode) + mode
 }
-
-# PT/QuanTA Auxiliary functions
 
 attempt_swap <- function(x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...){
 
@@ -121,10 +122,6 @@ swap_move <- function(type, j_deo,
 
 }
 
-quanta_transformation <- function(x, beta_1, beta_2, mode){
-  sqrt(beta_1/beta_2)*(x - mode) + mode
-}
-
 attempt_quanta <- function(mode_info,
                            x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...,
                            unidimensional = TRUE){
@@ -171,135 +168,6 @@ attempt_quanta <- function(mode_info,
   return(rej_list)
 
 }
-
-attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...,
-                                pass_prev_mod_assignment = TRUE){
-
-  n_modes <- length(mode_info$w)
-
-  mod_1 <- modAssignment_mahalanobis_cpp(x_1, beta_1,
-                                         mode_info$l_target_modes, mode_info$modes,
-                                         mode_info$L_inv, n_modes)
-  x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1$A_beta]])
-  mod_quanta_1 <- modAssignment_mahalanobis_cpp(x_quanta_1, beta_2,
-                                                mode_info$l_target_modes, mode_info$modes,
-                                                mode_info$L_inv, n_modes)
-
-  # Early exit if the transformation is not reversible
-  if(mod_1$A_beta != mod_quanta_1$A_beta){
-    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
-                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
-                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
-  }
-
-  mod_2 <- modAssignment_mahalanobis_cpp(x_2, beta_2,
-                                         mode_info$l_target_modes, mode_info$modes,
-                                         mode_info$L_inv, n_modes)
-  x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2$A_beta]])
-  mod_quanta_2 <- modAssignment_mahalanobis_cpp(x_quanta_2, beta_1,
-                                                mode_info$l_target_modes, mode_info$modes,
-                                                mode_info$L_inv, n_modes)
-
-  # Early exit if the transformation is not reversible
-  if(mod_2$A_beta != mod_quanta_2$A_beta){
-    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
-                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
-                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
-  }
-
-  if(pass_prev_mod_assignment){
-    swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2,
-                                          prev_mod_assign_maha = mod_quanta_1), ...)),
-                  do.call(l_target,c(list(x = x_quanta_2, beta = beta_1,
-                                          prev_mod_assign_maha = mod_quanta_2), ...)))
-  }else{
-    swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2), ...)),
-                  do.call(l_target,c(list(x = x_quanta_2, beta = beta_1), ...)))
-  }
-
-  x_quanta <- list(x_quanta_1, x_quanta_2)
-
-  delta_l <- sum(swaped_l) - (l_1 + l_2)
-
-  if(delta_l > 0 || log(runif(1)) <= delta_l){
-    return(list("acc" = TRUE, "beta_next" = c(beta_2, beta_1),
-                "l_next" = swaped_l, "x_next" = x_quanta,
-                "l_prop" = swaped_l, "x_prop" = x_quanta))
-  }
-  return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
-              "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
-              "l_prop" = swaped_l, "x_prop" = x_quanta))
-
-}
-
-attempt_quanta_list_byprod <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2,
-                                       by_prod_1, by_prod_2,
-                                       l_target_byprod, ...,
-                                       pass_prev_mod_assignment = TRUE){
-
-  n_modes <- length(mode_info$w)
-
-  mod_1 <- modAssignment_mahalanobis_cpp(x_1, beta_1,
-                                         mode_info$l_target_modes, mode_info$modes,
-                                         mode_info$L_inv, n_modes)
-  x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1$A_beta]])
-  mod_quanta_1 <- modAssignment_mahalanobis_cpp(x_quanta_1, beta_2,
-                                                mode_info$l_target_modes, mode_info$modes,
-                                                mode_info$L_inv, n_modes)
-
-  # Early exit if the transformation is not reversible
-  if(mod_1$A_beta != mod_quanta_1$A_beta){
-    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
-                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
-                "by_prod_next" = list(by_prod_1,by_prod_2),
-                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
-  }
-
-  mod_2 <- modAssignment_mahalanobis_cpp(x_2, beta_2,
-                                         mode_info$l_target_modes, mode_info$modes,
-                                         mode_info$L_inv, n_modes)
-  x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2$A_beta]])
-  mod_quanta_2 <- modAssignment_mahalanobis_cpp(x_quanta_2, beta_1,
-                                                mode_info$l_target_modes, mode_info$modes,
-                                                mode_info$L_inv, n_modes)
-
-  # Early exit if the transformation is not reversible
-  if(mod_2$A_beta != mod_quanta_2$A_beta){
-    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
-                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
-                "by_prod_next" = list(by_prod_1, by_prod_2),
-                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
-  }
-
-  if(pass_prev_mod_assignment){
-    swaped_l <- list(do.call(l_target_byprod,c(list(x = x_quanta_1, beta = beta_2,
-                                                    prev_mod_assign_maha = mod_quanta_1), ...)),
-                     do.call(l_target_byprod,c(list(x = x_quanta_2, beta = beta_1,
-                                                    prev_mod_assign_maha = mod_quanta_2), ...)))
-  }else{
-    swaped_l <- list(do.call(l_target_byprod,c(list(x = x_quanta_1, beta = beta_2), ...)),
-                     do.call(l_target_byprod,c(list(x = x_quanta_2, beta = beta_1), ...)))
-  }
-
-  x_quanta <- list(x_quanta_1, x_quanta_2)
-
-  delta_l <- (swaped_l[[1]]$l_eval - swaped_l[[2]]$l_eval) - (l_1 + l_2)
-
-  if(delta_l > 0 || log(runif(1)) <= delta_l){
-    return(list("acc" = TRUE, "beta_next" = c(beta_2, beta_1),
-                "l_next" = c(swaped_l[[1]]$l_eval, swaped_l[[2]]$l_eval),
-                "x_next" = x_quanta,
-                "by_prod_next" = list(swaped_l[[1]]$by_prod, swaped_l[[2]]$by_prod),
-                "l_prop" = swaped_l, "x_prop" = x_quanta))
-  }
-  return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
-              "l_next" = c(l_1, l_2),
-              "x_next" = list(x_1, x_2),
-              "by_prod_next" = list(by_prod_1, by_prod_2),
-              "l_prop" = c(swaped_l[[1]]$l_eval, swaped_l[[2]]$l_eval), "x_prop" = x_quanta))
-
-}
-
 
 quanta_move <- function(type, j_deo, mode_info,
                         x_curr, beta_curr, k_curr, l_curr, l_target, ...,
@@ -519,6 +387,69 @@ alps_swap_move <- function(type = "naive", j_deo = NULL, quanta_levels = NULL, m
 
 }
 
+
+####--- Llama a C++ interno ---####
+
+attempt_quanta_list <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2, l_target, ...,
+                                pass_prev_mod_assignment = TRUE){
+
+  n_modes <- length(mode_info$w)
+
+  mod_1 <- modAssignment_mahalanobis_cpp(x_1, beta_1,
+                                         mode_info$l_target_modes, mode_info$modes,
+                                         mode_info$L_inv, n_modes)
+  x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1$A_beta]])
+  mod_quanta_1 <- modAssignment_mahalanobis_cpp(x_quanta_1, beta_2,
+                                                mode_info$l_target_modes, mode_info$modes,
+                                                mode_info$L_inv, n_modes)
+
+  # Early exit if the transformation is not reversible
+  if(mod_1$A_beta != mod_quanta_1$A_beta){
+    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
+                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
+  }
+
+  mod_2 <- modAssignment_mahalanobis_cpp(x_2, beta_2,
+                                         mode_info$l_target_modes, mode_info$modes,
+                                         mode_info$L_inv, n_modes)
+  x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2$A_beta]])
+  mod_quanta_2 <- modAssignment_mahalanobis_cpp(x_quanta_2, beta_1,
+                                                mode_info$l_target_modes, mode_info$modes,
+                                                mode_info$L_inv, n_modes)
+
+  # Early exit if the transformation is not reversible
+  if(mod_2$A_beta != mod_quanta_2$A_beta){
+    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
+                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
+  }
+
+  if(pass_prev_mod_assignment){
+    swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2,
+                                          prev_mod_assign_maha = mod_quanta_1), ...)),
+                  do.call(l_target,c(list(x = x_quanta_2, beta = beta_1,
+                                          prev_mod_assign_maha = mod_quanta_2), ...)))
+  }else{
+    swaped_l <- c(do.call(l_target,c(list(x = x_quanta_1, beta = beta_2), ...)),
+                  do.call(l_target,c(list(x = x_quanta_2, beta = beta_1), ...)))
+  }
+
+  x_quanta <- list(x_quanta_1, x_quanta_2)
+
+  delta_l <- sum(swaped_l) - (l_1 + l_2)
+
+  if(delta_l > 0 || log(runif(1)) <= delta_l){
+    return(list("acc" = TRUE, "beta_next" = c(beta_2, beta_1),
+                "l_next" = swaped_l, "x_next" = x_quanta,
+                "l_prop" = swaped_l, "x_prop" = x_quanta))
+  }
+  return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+              "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
+              "l_prop" = swaped_l, "x_prop" = x_quanta))
+
+}
+
 alps_swap_move_list <- function(type = "naive", deo_odd = TRUE, quanta_levels, mode_info = NULL,
                                 x_curr, beta_curr, k_curr, l_curr, l_target, ...,
                                 K = NULL, odd_indices = NULL, even_indices = NULL, d = NULL,
@@ -596,6 +527,77 @@ alps_swap_move_list <- function(type = "naive", deo_odd = TRUE, quanta_levels, m
   return(mget(c("x_next","acc","k_next","beta_next","l_next","x_prop","l_prop")))
 
 }
+
+####--- Byproduct (FALLANDO) ---####
+
+attempt_quanta_list_byprod <- function(mode_info, x_1, x_2, beta_1, beta_2, l_1, l_2,
+                                       by_prod_1, by_prod_2,
+                                       l_target_byprod, ...,
+                                       pass_prev_mod_assignment = TRUE){
+
+  n_modes <- length(mode_info$w)
+
+  mod_1 <- modAssignment_mahalanobis_cpp(x_1, beta_1,
+                                         mode_info$l_target_modes, mode_info$modes,
+                                         mode_info$L_inv, n_modes)
+  x_quanta_1 <- quanta_transformation(x_1, beta_1, beta_2, mode_info$modes[[mod_1$A_beta]])
+  mod_quanta_1 <- modAssignment_mahalanobis_cpp(x_quanta_1, beta_2,
+                                                mode_info$l_target_modes, mode_info$modes,
+                                                mode_info$L_inv, n_modes)
+
+  # Early exit if the transformation is not reversible
+  if(mod_1$A_beta != mod_quanta_1$A_beta){
+    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
+                "by_prod_next" = list(by_prod_1,by_prod_2),
+                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
+  }
+
+  mod_2 <- modAssignment_mahalanobis_cpp(x_2, beta_2,
+                                         mode_info$l_target_modes, mode_info$modes,
+                                         mode_info$L_inv, n_modes)
+  x_quanta_2 <- quanta_transformation(x_2, beta_2, beta_1, mode_info$modes[[mod_2$A_beta]])
+  mod_quanta_2 <- modAssignment_mahalanobis_cpp(x_quanta_2, beta_1,
+                                                mode_info$l_target_modes, mode_info$modes,
+                                                mode_info$L_inv, n_modes)
+
+  # Early exit if the transformation is not reversible
+  if(mod_2$A_beta != mod_quanta_2$A_beta){
+    return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+                "l_next" = c(l_1, l_2), "x_next" = list(x_1, x_2),
+                "by_prod_next" = list(by_prod_1, by_prod_2),
+                "l_prop" = c(NA_real_, NA_real_), "x_prop" = list(x_quanta_1, NA_real_)))
+  }
+
+  if(pass_prev_mod_assignment){
+    swaped_l <- list(do.call(l_target_byprod,c(list(x = x_quanta_1, beta = beta_2,
+                                                    prev_mod_assign_maha = mod_quanta_1), ...)),
+                     do.call(l_target_byprod,c(list(x = x_quanta_2, beta = beta_1,
+                                                    prev_mod_assign_maha = mod_quanta_2), ...)))
+  }else{
+    swaped_l <- list(do.call(l_target_byprod,c(list(x = x_quanta_1, beta = beta_2), ...)),
+                     do.call(l_target_byprod,c(list(x = x_quanta_2, beta = beta_1), ...)))
+  }
+
+  x_quanta <- list(x_quanta_1, x_quanta_2)
+
+  delta_l <- (swaped_l[[1]]$l_eval - swaped_l[[2]]$l_eval) - (l_1 + l_2)
+
+  if(delta_l > 0 || log(runif(1)) <= delta_l){
+    return(list("acc" = TRUE, "beta_next" = c(beta_2, beta_1),
+                "l_next" = c(swaped_l[[1]]$l_eval, swaped_l[[2]]$l_eval),
+                "x_next" = x_quanta,
+                "by_prod_next" = list(swaped_l[[1]]$by_prod, swaped_l[[2]]$by_prod),
+                "l_prop" = swaped_l, "x_prop" = x_quanta))
+  }
+  return(list("acc" = FALSE, "beta_next" = c(beta_1, beta_2),
+              "l_next" = c(l_1, l_2),
+              "x_next" = list(x_1, x_2),
+              "by_prod_next" = list(by_prod_1, by_prod_2),
+              "l_prop" = c(swaped_l[[1]]$l_eval, swaped_l[[2]]$l_eval), "x_prop" = x_quanta))
+
+}
+
 
 alps_swap_move_list_byprod <- function(type = "naive", deo_odd = TRUE, quanta_levels, mode_info = NULL,
                                        x_curr, beta_curr, k_curr, l_curr, by_prod_curr,
