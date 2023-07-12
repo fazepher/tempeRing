@@ -1,4 +1,6 @@
 
+####--- Original ---####
+
 #' @export
 get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
                          optimize = TRUE, method = "BFGS", control_optim = list(fnscale = -1),
@@ -110,7 +112,7 @@ HAT_rwm_chain <- function(ltemp_target, ..., HAT_info,
 
 }
 
-
+####--- Llama a C++ interno ---####
 lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
 
   # Standard power tempering
@@ -135,6 +137,7 @@ lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assig
 
 }
 
+####--- Byproduct (FALLANDO) ---####
 lHAT_target_byprod_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
 
   # Standard power tempering
