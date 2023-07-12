@@ -147,7 +147,7 @@ test_that("Random-Walk Metropolis works",{
       sample_test[1:d_test, s] <- rwm_global_scale_sampler_leaner_chain(
         ltarget_logistic_reg, d = d_test, y = y_test[,s],
         global_scale = 0.35, S = 100, burn = 99,
-        x_0 = beta_test[,s])$x
+        x_0 = beta_test[,s], silent = TRUE)$x
     }
     p_values_test <- numeric(nrow(sample_dgp))
     for(k in seq_along(p_values_test)){
