@@ -1169,3 +1169,284 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
 
 }
 
+ALPS_rwm_leaner_chain_list_byprod <- function(ltemp_target, ..., HAT_info,
+                                              beta_schedule, swap_type = "deo", quanta_levels = NULL,
+                                              scale = 1, Cycles = 1000, Temp_Moves = 5, Within_Moves = 5, burn_cycles = 0,
+                                              x_0 = NULL, x_0_u = 2,
+                                              l_0 = NULL, by_prod_0 = NA_real_,
+                                              seed = NULL, jump_p = 0.7,
+                                              k_0 = NULL, custom_rw_sampler = NULL,
+                                              target_names = NULL, d = NULL,
+                                              quanta_mode_info = NULL,
+                                              quanta_pass_prev_mod_assign = TRUE, start_deo_odd = TRUE,
+                                              silent = FALSE){
+
+
+  #--- HAT use -------------
+  l_target_byprod <- lHAT_target_byprod_cpp
+  dim_byprod <- 4
+  target_args <- c(list(ltemp_target = ltemp_target),
+                   "HAT_info" = rlang::dots_list(HAT_info),
+                   rlang::dots_list(...))
+
+
+  #--- Preparation -------------
+
+  # General PT parameters
+  start_time <- Sys.time()
+  global_times <- rep(start_time, 3)
+  K <- length(beta_schedule)
+  beta_max <- beta_schedule[K]
+  odd_indices <- seq(1, K, by = 2)
+  even_indices <- seq(2, K, by = 2)
+
+
+  # Within Level Moves Dispatcher
+  make_within_level_moves <- function(x_w, l_w, beta_w, scale_w, sampler_w, u_w){
+    if(u_w){
+      # Leap-Point Sampler
+      lps_args_list <- list(x_0 = x_w, l_0 = l_w, beta = beta_w,
+                            mh_sampler = lpsampler_cpp,
+                            other_sampler_args = c("beta_max" = beta_w,
+                                                   HAT_info[c("w","modes","L")]),
+                            lq_mh = lps_q_cpp,
+                            other_lq_args = c("beta_max" = beta_w,
+                                              HAT_info[c("w","modes","L_inv","ldet_L_inv")]),
+                            S = Within_Moves, d = d, dim_byprod = dim_byprod,
+                            burn = 0, silent = TRUE) |>
+        c("l_target_byprod" = l_target_byprod, target_args)
+      aux <- do.call(mh_sampler_leaner_chain_list_byprod, lps_args_list)
+    }else{
+      # Regular RWM
+      # rwm_args_list <- list(x_0 = x_w, l_0 = l_w, beta = beta_w,
+      #                       scale = scale_w, custom_rw_sampler = sampler_w,
+      #                       S = Within_Moves, d = d, dim_byprod = dim_byprod,
+      #                       burn = 0, silent = TRUE) |>
+      #   c("l_target_byprod" = l_target_byprod, target_args)
+      # aux <- do.call(rwm_sampler_leaner_chain_list_byprod, rwm_args_list)
+      rwm_args_list <- list(x_0 = x_w, l_0 = l_w, beta = beta_w,
+                            scale = scale_w, custom_rw_sampler = sampler_w,
+                            S = Within_Moves, d = d, burn = 0, silent = TRUE) |>
+        c("l_target" = lHAT_target_cpp, target_args)
+      aux <- do.call(rwm_sampler_leaner_chain_list, rwm_args_list)
+    }
+    return(aux)
+  }
+
+
+  # QuanTA levels checking
+  if(is.null(quanta_levels)){
+    quanta_levels <- K-1
+  }else{
+    if(!all(quanta_levels %in% seq(1,K-1))){
+      stop(paste("Invalid quanta_levels.",
+                 "These must be the base indexes for which QuanTA swaps will be attempted,",
+                 "hence a vector of integers between 1 and K-1,",
+                 "where K is the number of temperatures used.",
+                 sep = "\n"))
+    }
+    quanta_mode_info <- quanta_mode_info %||% HAT_info
+  }
+
+  # Dimension and Scales
+  if(is.list(scale)){
+    if(length(scale) != K){
+      stop("As a list, length of scale must must equal that of beta_schedule")
+    }
+    scale_list <- scale
+  }else{
+    stopifnot(is.numeric(scale))
+    scale_list <- lapply(beta_schedule, function(beta) scale/beta)
+  }
+  d <- d %||% ifelse(is.matrix(scale_list[[1]]), nrow(scale_list[[1]]), length(scale_list[[1]]))
+  if(d > 1 && !is.matrix(scale_list[[1]])){
+    scale_list <- lapply(scale_list, function(scale) diag(scale, d))
+    if(!silent){
+      warning("Transforming scale parameter to diagonal matrix")
+    }
+  }
+
+  # Checking for valid sample sizes
+  stopifnot(Cycles >= 1)
+  stopifnot(-1 <= burn_cycles && burn_cycles < Cycles)
+  stopifnot(Temp_Moves >= 1)
+  stopifnot(Within_Moves >= 1)
+
+  # If the user didn't we define proposal sampler(s) as indep. normals
+  if(is.list(custom_rw_sampler)){
+    if(length(custom_rw_sampler) != K){
+      stop("As a list, custom_rw_sampler must have the same length of beta_schedule")
+    }
+    sampler_list <- custom_rw_sampler
+  }else{
+    sampler <- custom_rw_sampler %||%
+      ifelse(d == 1,
+             function(x, scale){ rnorm(n = 1, mean = x, sd = scale) },
+             function(x, scale){ rmvtnorm_temp_cpp(n = 1, mu = x, sigma = scale) })
+    sampler_list <- rep(list(sampler),K)
+  }
+
+  # Possibly set seed
+  if(!is.null(seed)){
+    set.seed(seed)
+  }
+
+  # Get starting point
+  if(is.null(x_0)){
+    stopifnot(is.numeric(x_0_u) && x_0_u > 0)
+    x_0 <- matrix(data = runif(d*K, min = -x_0_u, max = x_0_u), nrow = d, ncol = K)
+  }else{
+    stopifnot(is.numeric(x_0))
+    stopifnot(nrow(x_0) == d && ncol(x_0) == K)
+  }
+  k_0 <- k_0 %||% 1:K
+  b_0 <- beta_schedule[k_0]
+  if(is.null(l_0)){
+    # More verbose but attempts to use mapply have failed
+    # (asplit for the matrix rows may also fail because it keeps them as arrays)
+    l_0 <- numeric(K)
+    by_prod_0 <- matrix(nrow = dim_byprod, ncol = K)
+    for(m in 1:K){
+      l_eval_0 <- do.call(l_target_byprod, c(list(x = x_0[ , m], beta = b_0[m]), target_args))
+      l_0[m] <- l_eval_0$l_eval
+      by_prod_0[, m] <- l_eval_0$by_prod
+    }
+  }
+
+
+  # Preallocate containers
+  cycle_length <- Within_Moves + Temp_Moves
+  x <- lapply(1:K, function(m) matrix(NA_real_, nrow = d, ncol = Cycles*cycle_length + 1))
+  by_prod <- lapply(1:K, function(m) matrix(NA_real_, nrow = dim_byprod, ncol = Cycles*cycle_length + 1))
+  k_indexes <- matrix(NA_integer_, nrow = Cycles*Temp_Moves + 1, ncol = K)
+  beta_indexes <- matrix(NA_real_, nrow = Cycles*Temp_Moves + 1, ncol = K)
+  swap_acc <- array(-1, dim = c(K-1, Temp_Moves, Cycles))
+  rwm_acc <- lapply(1:K, function(k) matrix(NA, nrow = Within_Moves, ncol = Cycles))
+
+  #--- Algorithm -------------
+
+  # Initialize
+  for(m in 1:K){
+    x[[m]][ , 1] <- x_0[ , m]
+    by_prod[[m]][, 1] <- by_prod_0[, m]
+  }
+  k_indexes[1, ] <- k_0
+  beta_indexes[1, ] <- b_0
+  l_x <- l_0
+
+
+  # Run Cycles
+  i_cycle <- 1
+  j_cycle <- 1
+  sequential_plan <- is(future::plan(), "sequential") # possible parallelism
+  current_deo_odd <- start_deo_odd
+  for(c in 1:Cycles){
+
+    if(!silent & isTRUE(c %% floor(Cycles*0.05) == 0)){
+      cat(paste0("Avance: ", round(100*c/Cycles), "%"), sep = "\n")
+      cat(format(Sys.time(), usetz=TRUE), sep = "\n")
+    }
+
+    # Within Level Exploration (possible parallelism)
+    print(lapply(x, function(x_m) x_m[, i_cycle]))
+    if(sequential_plan){
+      within_level_moves <- mapply(
+        FUN = make_within_level_moves,
+        x_w = lapply(x, function(x_m) x_m[, i_cycle]),
+        l_w = l_x,
+        beta_w = beta_indexes[j_cycle, ],
+        scale_w = scale_list[k_indexes[j_cycle, ]],
+        sampler_w = sampler_list[k_indexes[j_cycle, ]],
+        u_w = (runif(1) <= jump_p) & (k_indexes[j_cycle, ] == K),
+        SIMPLIFY = FALSE)
+    }else{
+      within_level_moves <- future.apply::future_mapply(
+        FUN = make_within_level_moves,
+        x_w = lapply(x, function(x_m) x_m[, i_cycle]),
+        l_w = l_x,
+        beta_w = beta_indexes[j_cycle, ],
+        scale_w = scale_list[k_indexes[j_cycle, ]],
+        sampler_w = sampler_list[k_indexes[j_cycle, ]],
+        u_w = u_lps[c] & (k_indexes[j_cycle, ] == K),
+        SIMPLIFY = FALSE,
+        future.seed = TRUE,
+        future.globals = c("Within_Moves","d","HAT_info"))
+    }
+    for(m in 1:K){
+      x[[m]][ , i_cycle + 1:Within_Moves] <- t(within_level_moves[[m]]$x)
+      #by_prod[[m]][ , i_cycle + 1:Within_Moves] <- t(within_level_moves[[m]]$by_prod)
+      l_x[m] <- within_level_moves[[m]]$l_x_curr
+      rwm_acc[[ k_indexes[j_cycle, m] ]][ , c] <- within_level_moves[[m]]$acc
+    }
+
+
+    i_cycle <- i_cycle + Within_Moves
+
+    # Temperature Swaps
+    for(t in 1:Temp_Moves){
+
+      swap_arguments <- list(x_curr = lapply(x, function(x_m) x_m[, i_cycle]),
+                             l_curr = l_x,
+                             beta_curr = beta_indexes[j_cycle, ],
+                             k_curr = k_indexes[j_cycle, ],
+                             by_prod_curr = lapply(by_prod, function(bp_m) bp_m[, i_cycle]),
+                             type = swap_type, deo_odd = current_deo_odd,
+                             l_target_byprod, target_args,
+                             quanta_levels = quanta_levels,
+                             mode_info = quanta_mode_info, K = K, d = d,
+                             odd_indices = odd_indices, even_indices = even_indices,
+                             pass_mod_assignment = quanta_pass_prev_mod_assign)
+      swap_moves <- do.call(alps_swap_move_list_byprod, swap_arguments)
+      current_deo_odd <- !current_deo_odd
+
+      swap_acc[, t, c] <- swap_moves$acc
+      l_x <- swap_moves$l_next
+
+      i_cycle <- i_cycle + 1
+      for(m in 1:K){
+        x[[m]][, i_cycle] <- swap_moves$x_next[[m]]
+        by_prod[[m]][, i_cycle] <- swap_moves$by_prod_next[[m]]
+      }
+
+      j_cycle <- j_cycle + 1
+      k_indexes[j_cycle, ] <- swap_moves$k_next
+      beta_indexes[j_cycle, ] <- swap_moves$beta_next
+
+    }
+
+  }
+  global_times[2] <- Sys.time()
+
+  #--- Post processing and result -------------
+
+  swap_acc_rates <- apply(swap_acc, 1, function(swaps) mean(swaps[swaps>=0]) )
+  rwm_acc_rates <- vapply(rwm_acc, mean, numeric(1))
+
+  if(!silent){
+    cat("Finished Sampling", sep = "\n")
+    cat(paste("Swap Acceptance Rates:", round(swap_acc_rates,3)), sep = "\n")
+    cat(paste("RWM Acceptance Rates:", round(rwm_acc_rates,3)), sep = "\n")
+  }
+
+  if(burn_cycles == -1){
+    global_times[3] <- Sys.time()
+    return(mget(c("x","k_indexes","beta_indexes",
+                  "swap_acc","swap_acc_rates",
+                  "rwm_acc","rwm_acc_rates",
+                  "global_times","current_deo_odd","by_prod")))
+  }
+
+  burn_window <- seq(1, burn_cycles + 1)
+  burn_window_k <- seq(1, burn_cycles*Temp_Moves + 1)
+  global_times[3] <- Sys.time()
+  return(list(x = lapply(x,function(x_m) x_m[,-burn_window]),
+              k_indexes = k_indexes[-burn_window_k, ],
+              beta_indexes =  beta_indexes[-burn_window_k, ],
+              swap_acc = swap_acc[,,-burn_window],
+              swap_acc_rates = swap_acc_rates,
+              rwm_acc = lapply(rwm_acc, function(moves) moves[,-burn_window]),
+              rwm_acc_rates = rwm_acc_rates,
+              global_times = global_times, current_deo_odd = current_deo_odd,
+              by_prod = lapply(by_prod, function(bp_m) bp_m[,-burn_window])))
+
+}

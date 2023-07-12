@@ -239,11 +239,8 @@ List mh_step_cpp(const NumericVector& x_curr, const NumericVector& x_prop,
   NumericVector x_next(d);
   double l_next;
 
-  double l_ratio = (l_prop + lq_p2c) - (l_curr + lq_c2p);
-
-  double exp_l_ratio = exp(l_ratio);
-  double alpha = exp_l_ratio < 1.0 ? exp_l_ratio : 1.0;
-
+  double l_ratio = (l_prop - l_curr) + (lq_p2c - lq_c2p);
+  double alpha = l_ratio > 0.0 ? 1.0 : exp(l_ratio);
   bool accepted = runif(1)[0] <= alpha;
 
   if(accepted){
@@ -260,6 +257,7 @@ List mh_step_cpp(const NumericVector& x_curr, const NumericVector& x_prop,
                       Named("accepted") = accepted,
                       Named("alpha") = alpha,
                       Named("l_ratio") = l_ratio);
+
 }
 
 // [[Rcpp::export]]

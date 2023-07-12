@@ -90,6 +90,27 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
 
 }
 
+#' @export
+HAT_rwm_chain <- function(ltemp_target, ..., HAT_info,
+                          beta_schedule, swap_type = "deo",
+                          scale = 1, Cycles = 1000, Temp_Moves = 1, Within_Moves = 5,
+                          x_0 = NULL, x_0_u = 2, seed = NULL,
+                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
+                          silent = FALSE){
+
+  # Then it's just a wrapper of the PT algorithm for the new HAT target
+  hat_args <- c(list(l_target = lHAT_target, HAT_info = HAT_info,
+                     ltemp_target = ltemp_target), rlang::dots_list(...),
+                list(beta_schedule = beta_schedule, swap_type = swap_type,
+                     scale = scale, Cycles = Cycles, Temp_Moves = Temp_Moves, Within_Moves = Within_Moves,
+                     x_0 = x_0, x_0_u = x_0_u, seed = seed,
+                     custom_rw_sampler = custom_rw_sampler, target_names = target_names, d = d,
+                     silent = silent))
+  do.call(PT_rwm_chain, hat_args)
+
+}
+
+
 lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
 
   # Standard power tempering
@@ -114,23 +135,29 @@ lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assig
 
 }
 
+lHAT_target_byprod_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
 
-#' @export
-HAT_rwm_chain <- function(ltemp_target, ..., HAT_info,
-                          beta_schedule, swap_type = "deo",
-                          scale = 1, Cycles = 1000, Temp_Moves = 1, Within_Moves = 5,
-                          x_0 = NULL, x_0_u = 2, seed = NULL,
-                          custom_rw_sampler = NULL, target_names = NULL, d = NULL,
-                          silent = FALSE){
+  # Standard power tempering
+  l_eval <- ltemp_target(x, beta = beta, ...)
 
-  # Then it's just a wrapper of the PT algorithm for the new HAT target
-  hat_args <- c(list(l_target = lHAT_target, HAT_info = HAT_info,
-                     ltemp_target = ltemp_target), rlang::dots_list(...),
-                list(beta_schedule = beta_schedule, swap_type = swap_type,
-                     scale = scale, Cycles = Cycles, Temp_Moves = Temp_Moves, Within_Moves = Within_Moves,
-                     x_0 = x_0, x_0_u = x_0_u, seed = seed,
-                     custom_rw_sampler = custom_rw_sampler, target_names = target_names, d = d,
-                     silent = silent))
-  do.call(PT_rwm_chain, hat_args)
+  # Mode assignment
+  mod_assign_maha <- prev_mod_assign_maha %||%
+    modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                                  HAT_info$L_inv, length(HAT_info$w))
+  by_prod <- unlist(mod_assign_maha, use.names = FALSE)
+
+  # Early exit if beta is 1
+  if(beta == 1){
+    return(list(l_eval = l_eval, by_prod = by_prod))
+  }
+
+  # If mode assignment is the same, we do BHAT
+  if(mod_assign_maha$A_beta == mod_assign_maha$A_1){
+    return(list(l_eval = l_eval + (1-beta)*mod_assign_maha$l_target_mu,
+                by_prod = by_prod))
+  }
+
+  # Otherwise we use function G
+  return(list(l_eval = mod_assign_maha$G_x_beta, by_prod = by_prod))
 
 }

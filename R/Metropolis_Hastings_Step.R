@@ -255,9 +255,39 @@ mh_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sample
 
 }
 
-metropolis_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args){
+metropolis_sampling_step_list <- function(x_curr, l_curr, l_target, ...,
+                                          sampler, sampler_args = NULL){
 
   mh_sampling_step_list(x_curr, l_curr, l_target, ...,
                         sampler = sampler, sampler_args = sampler_args)
+
+}
+
+mh_sampling_step_list_byprod <- function(x_curr, l_curr, l_target_byprod, ...,
+                                         sampler, sampler_args = NULL,
+                                         lq_sampler = NULL, lq_sampler_args = NULL){
+
+  x_prop <- do.call(sampler, c(list(x_curr), sampler_args))
+  l_eval <- l_target_byprod(x_prop, ...)
+  l_prop <- l_eval$l_eval
+
+  if(is.function(lq_sampler)){
+    lq_c2p <- do.call(lq_sampler, c(list(x_curr, x_prop), lq_sampler_args))
+    lq_p2c <- do.call(lq_sampler, c(list(x_prop, x_curr), lq_sampler_args))
+  }else{
+    lq_c2p <- 0
+    lq_p2c <- 0
+  }
+  step_resul <- mh_step_cpp(x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c)
+
+  return(c(step_resul, list("by_prod" = l_eval$by_prod)))
+
+}
+
+metropolis_sampling_step_list_byprod <- function(x_curr, l_curr, l_target_byprod, ...,
+                                                 sampler, sampler_args){
+
+  mh_sampling_step_list_byprod(x_curr, l_curr, l_target_byprod, ...,
+                               sampler = sampler, sampler_args = sampler_args)
 
 }

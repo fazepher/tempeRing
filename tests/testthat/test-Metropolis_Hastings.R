@@ -7,8 +7,8 @@ test_that("Metropolis-Hastings step works", {
             l_curr = stats::dnorm(0, log = TRUE),
             l_prop = stats::dnorm(0, log = TRUE),
             lq_c2p = stats::dnorm(0, mean = 0, log = TRUE),
-            lq_p2c = stats::dnorm(0, mean = 0, log = TRUE)) |>
-      (\(x) x[c("x_next","l_next","accepted")])(),
+            lq_p2c = stats::dnorm(0, mean = 0, log = TRUE),
+            full_return = FALSE),
     list(x_next = 0,
          l_next = stats::dnorm(0, log = TRUE),
          accepted = TRUE))
@@ -23,6 +23,7 @@ test_that("Metropolis-Hastings step works", {
                    list(x_next = matrix(0, nrow = 5),
                         l_next = rep(stats::dnorm(0, log = TRUE), 5),
                         accepted = rep(TRUE, 5)))
+
 
   # We should always accept an "up-hill" symmetrical proposal
   expect_identical(mh_step(x_curr = 1,
