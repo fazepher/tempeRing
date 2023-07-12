@@ -1,4 +1,6 @@
 
+####--- Original ---####
+
 #' Metropolis-Hastings Step
 #'
 #' Perform a Metropolis-Hastings step on one or more states.
@@ -237,8 +239,10 @@ metropolis_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sam
 
 }
 
-mh_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args = NULL,
-                                  lq_sampler = NULL, lq_sampler_args = NULL){
+####--- Llama a C++ interno ---####
+
+mh_sampling_step_cpp <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args = NULL,
+                                 lq_sampler = NULL, lq_sampler_args = NULL){
 
   x_prop <- do.call(sampler, c(list(x_curr), sampler_args))
   l_prop <- l_target(x_prop, ...)
@@ -255,13 +259,15 @@ mh_sampling_step_list <- function(x_curr, l_curr, l_target, ..., sampler, sample
 
 }
 
-metropolis_sampling_step_list <- function(x_curr, l_curr, l_target, ...,
-                                          sampler, sampler_args = NULL){
+metropolis_sampling_step_cpp <- function(x_curr, l_curr, l_target, ...,
+                                         sampler, sampler_args = NULL){
 
-  mh_sampling_step_list(x_curr, l_curr, l_target, ...,
-                        sampler = sampler, sampler_args = sampler_args)
+  mh_sampling_step_cpp(x_curr, l_curr, l_target, ...,
+                       sampler = sampler, sampler_args = sampler_args)
 
 }
+
+####--- Byproduct (FALLANDO) ---####
 
 mh_sampling_step_list_byprod <- function(x_curr, l_curr, l_target_byprod, ...,
                                          sampler, sampler_args = NULL,
