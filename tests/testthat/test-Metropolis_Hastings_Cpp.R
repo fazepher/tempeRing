@@ -159,3 +159,58 @@ test_that("Random-Walk Metropolis works",{
 
 
 })
+
+test_that("Metropolis-Hastings works",{
+
+  expect_true({
+    d_test <- 5
+    n_test <- 50
+    logit_x_data <- matrix(rnorm(d_test*n_test), nrow = n_test, ncol = d_test)
+    ltarget_logistic_reg <- function(beta, y, x = logit_x_data){
+      l_prior <- sum(dnorm(beta, log = TRUE))
+      eta <- as.vector(x %*% beta) # Linear predictors / Log-odds vector
+      phi <- plogis(eta, log.p = TRUE) # Log-probabilities of success
+      l_vero <- sum(phi + eta*(y - 1)) # Log-likelihood
+      return(l_prior + l_vero)
+    }
+    gradient_logistic_reg <- function(beta, y, x = logit_x_data){
+      eta <- as.vector(x %*% beta)
+      phi <- plogis(eta, log.p = TRUE)
+      grad_ll <- t(x) %*% (y - phi)
+    }
+
+    s_test <- 500
+    beta_dgp <- matrix(rnorm(d_test*s_test), nrow = d_test, ncol = s_test)
+    beta_test <- matrix(rnorm(d_test*s_test), nrow = d_test, ncol = s_test)
+    eta_dgp <- logit_x_data %*% beta_dgp
+    eta_test <- logit_x_data %*% beta_test
+    h_eta_dgp <- apply(eta_dgp, 2, function(eta_rep) c(quantile(eta_rep,c(0.05,0.5,0.95)),
+                                                       sd(eta_rep),
+                                                       sd(eta_rep)/mean(eta_rep)))
+    h_eta_test <- apply(eta_test, 2, function(eta_rep) c(quantile(eta_rep,c(0.05,0.5,0.95)),
+                                                         sd(eta_rep),
+                                                         sd(eta_rep)/mean(eta_rep)))
+    y_dgp <- apply(eta_dgp, 2,
+                   function(eta_rep) sapply(eta_rep, function(eta) rbinom(1,1,plogis(eta))))
+    y_test <- apply(eta_test, 2,
+                    function(eta_rep) sapply(eta_rep, function(eta) rbinom(1,1,plogis(eta))))
+    h_y_dgp <- apply(y_dgp, 2, function(y_rep) c(mean(y_rep), sd(y_rep), sd(y_rep)/mean(y_rep)))
+    h_y_test <- apply(y_test, 2, function(y_rep) c(mean(y_rep), sd(y_rep), sd(y_rep)/mean(y_rep)))
+    sample_dgp <- rbind(beta_dgp, h_eta_dgp, h_y_dgp)
+    sample_test <- rbind(beta_test, h_eta_test, h_y_test)
+    for(s in 1:s_test){
+      sample_test[1:d_test, s] <- mh_sampler_leaner_chain(
+        ltarget_logistic_reg, d = d_test, y = y_test[,s],
+        global_scale = 0.35, S = 100, burn = 99,
+        x_0 = beta_test[,s], silent = TRUE)$x
+    }
+    p_values_test <- numeric(nrow(sample_dgp))
+    for(k in seq_along(p_values_test)){
+      p_values_test[k] <- ks.test(sample_dgp[k, ], sample_test[k, ], exact = TRUE)$p.value
+    }
+    all(p_values_test > 0.025/length(p_values_test))
+  })
+
+
+
+})
