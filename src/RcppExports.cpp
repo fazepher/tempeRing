@@ -161,6 +161,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ulmixhatsn_temp_cpp_alfas
+double ulmixhatsn_temp_cpp_alfas(const NumericVector& x, double beta, const NumericVector& w, const List& mu, const NumericVector& omega, const NumericVector& alpha);
+RcppExport SEXP _tempeRing_ulmixhatsn_temp_cpp_alfas(SEXP xSEXP, SEXP betaSEXP, SEXP wSEXP, SEXP muSEXP, SEXP omegaSEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const List& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type omega(omegaSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(ulmixhatsn_temp_cpp_alfas(x, beta, w, mu, omega, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
 // mh_step_cpp
 List mh_step_cpp(const NumericVector& x_curr, const NumericVector& x_prop, double l_curr, double l_prop, double lq_c2p, double lq_p2c);
 RcppExport SEXP _tempeRing_mh_step_cpp(SEXP x_currSEXP, SEXP x_propSEXP, SEXP l_currSEXP, SEXP l_propSEXP, SEXP lq_c2pSEXP, SEXP lq_p2cSEXP) {
@@ -251,6 +267,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tempeRing_lhatsn_cpp", (DL_FUNC) &_tempeRing_lhatsn_cpp, 4},
     {"_tempeRing_lmixhatsn_cpp", (DL_FUNC) &_tempeRing_lmixhatsn_cpp, 5},
     {"_tempeRing_ulmixhatsn_temp_cpp", (DL_FUNC) &_tempeRing_ulmixhatsn_temp_cpp, 6},
+    {"_tempeRing_ulmixhatsn_temp_cpp_alfas", (DL_FUNC) &_tempeRing_ulmixhatsn_temp_cpp_alfas, 6},
     {"_tempeRing_mh_step_cpp", (DL_FUNC) &_tempeRing_mh_step_cpp, 6},
     {"_tempeRing_metropolis_step_cpp", (DL_FUNC) &_tempeRing_metropolis_step_cpp, 4},
     {"_tempeRing_modAssignment_cpp", (DL_FUNC) &_tempeRing_modAssignment_cpp, 6},

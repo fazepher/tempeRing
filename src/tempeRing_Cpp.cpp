@@ -226,6 +226,22 @@ double ulmixhatsn_temp_cpp(const NumericVector& x, double beta,
 
 }
 
+// [[Rcpp::export]]
+double ulmixhatsn_temp_cpp_alfas(const NumericVector& x, double beta,
+                                 const NumericVector& w, const List& mu, const NumericVector& omega,
+                                 const NumericVector& alpha){
+
+  int n_modes = w.size();
+  NumericVector l_modes(n_modes);
+
+  for(int m=0; m < n_modes; m++){
+    l_modes[m] = log(w[m]) + lhatsn_cpp(x, mu[m], omega[m], alpha[m]);
+  }
+
+  return beta*logsumexp_cpp(l_modes);
+
+}
+
 
 
 ////----Metropolis-Hastings----////

@@ -41,6 +41,10 @@ ulmixhatsn_temp_cpp <- function(x, beta, w, mu, omega, alpha) {
     .Call(`_tempeRing_ulmixhatsn_temp_cpp`, x, beta, w, mu, omega, alpha)
 }
 
+ulmixhatsn_temp_cpp_alfas <- function(x, beta, w, mu, omega, alpha) {
+    .Call(`_tempeRing_ulmixhatsn_temp_cpp_alfas`, x, beta, w, mu, omega, alpha)
+}
+
 mh_step_cpp <- function(x_curr, x_prop, l_curr, l_prop, lq_c2p = 0.0, lq_p2c = 0.0) {
     .Call(`_tempeRing_mh_step_cpp`, x_curr, x_prop, l_curr, l_prop, lq_c2p, lq_p2c)
 }
