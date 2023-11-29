@@ -43,16 +43,16 @@ When \code{beta} = 1, we recover a regular normal density.
 \details{
 Tempering a distribution means raising its density to a power \eqn{\beta>0},
 known as inverse temperature. Equivalently, we multiply the log-density by \eqn{\beta}:
-\deqn{f_\beta(x) = f(x)^\beta}
-\deqn{l_\beta(x) = \beta l(x)}
+\deqn{f(x ; \beta) = f(x)^\beta}
+\deqn{l(x ; \beta) = \beta \; l(x)}
 Consider a univariate normal random variable centered at \eqn{\mu} with
 standard deviation \eqn{\sigma}, where \eqn{cte} represents the normalizing constant
-\deqn{X ~ N(\mu, \sigma)}
-\deqn{l(x) = -(x-\mu)^2 / 2\sigma^2 + cte}
+\deqn{X \sim N(\mu, \sigma)}
+\deqn{l(x) = cte -\dfrac{(x-\mu)^2}{2\sigma^2}}
 Its tempered version is equivalent to rescaling with new standard deviation \eqn{\sigma/\sqrt\beta}
 and keeping the same mean parameter:
-\deqn{l_\beta(x) = \beta l(x) = -\beta(x-\mu)^2 / 2\sigma^2 + cte'}
-\deqn{X|\beta ~ N(\mu, \sigma/\sqrt\beta)}
+\deqn{l(x ; \beta) = \beta \; l(x) = cte' - \dfrac{\beta(x-\mu)^2}{2\sigma^2}}
+\deqn{X|\beta \sim N(\mu, \sigma/\sqrt\beta)}
 \subsection{Vectorization}{
 
 The functions inherit vectorization, so can be used for example with
