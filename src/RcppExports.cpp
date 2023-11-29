@@ -255,6 +255,73 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// modAssignment_RJMCMC_cpp
+List modAssignment_RJMCMC_cpp(const NumericVector& x, const NumericVector& x_tilde, double beta, const NumericVector& l_target_modes, const NumericVector& modes_idxs, const List& modes_tilde, const List& L_inv, int n_modes);
+RcppExport SEXP _tempeRing_modAssignment_RJMCMC_cpp(SEXP xSEXP, SEXP x_tildeSEXP, SEXP betaSEXP, SEXP l_target_modesSEXP, SEXP modes_idxsSEXP, SEXP modes_tildeSEXP, SEXP L_invSEXP, SEXP n_modesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type x_tilde(x_tildeSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type l_target_modes(l_target_modesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type modes_idxs(modes_idxsSEXP);
+    Rcpp::traits::input_parameter< const List& >::type modes_tilde(modes_tildeSEXP);
+    Rcpp::traits::input_parameter< const List& >::type L_inv(L_invSEXP);
+    Rcpp::traits::input_parameter< int >::type n_modes(n_modesSEXP);
+    rcpp_result_gen = Rcpp::wrap(modAssignment_RJMCMC_cpp(x, x_tilde, beta, l_target_modes, modes_idxs, modes_tilde, L_inv, n_modes));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rj_rmvtnorm_temp_cpp
+arma::mat rj_rmvtnorm_temp_cpp(int n, double r, const arma::vec& mu, double beta, double global_scale, const Nullable<NumericMatrix>& sigma, const Nullable<NumericMatrix>& L);
+RcppExport SEXP _tempeRing_rj_rmvtnorm_temp_cpp(SEXP nSEXP, SEXP rSEXP, SEXP muSEXP, SEXP betaSEXP, SEXP global_scaleSEXP, SEXP sigmaSEXP, SEXP LSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type r(rSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< double >::type global_scale(global_scaleSEXP);
+    Rcpp::traits::input_parameter< const Nullable<NumericMatrix>& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const Nullable<NumericMatrix>& >::type L(LSEXP);
+    rcpp_result_gen = Rcpp::wrap(rj_rmvtnorm_temp_cpp(n, r, mu, beta, global_scale, sigma, L));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rj_lpsampler_cpp
+arma::vec rj_lpsampler_cpp(const NumericVector& x_curr, double beta_max, const NumericVector& w, const List& modes_tilde, const List& L);
+RcppExport SEXP _tempeRing_rj_lpsampler_cpp(SEXP x_currSEXP, SEXP beta_maxSEXP, SEXP wSEXP, SEXP modes_tildeSEXP, SEXP LSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type x_curr(x_currSEXP);
+    Rcpp::traits::input_parameter< double >::type beta_max(beta_maxSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const List& >::type modes_tilde(modes_tildeSEXP);
+    Rcpp::traits::input_parameter< const List& >::type L(LSEXP);
+    rcpp_result_gen = Rcpp::wrap(rj_lpsampler_cpp(x_curr, beta_max, w, modes_tilde, L));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rj_lps_q_cpp
+double rj_lps_q_cpp(const NumericVector& x_curr, const NumericVector& x_prop, double beta_max, const NumericVector& w, const List& modes, const List& L_inv, const NumericVector& ldet_L_inv);
+RcppExport SEXP _tempeRing_rj_lps_q_cpp(SEXP x_currSEXP, SEXP x_propSEXP, SEXP beta_maxSEXP, SEXP wSEXP, SEXP modesSEXP, SEXP L_invSEXP, SEXP ldet_L_invSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type x_curr(x_currSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type x_prop(x_propSEXP);
+    Rcpp::traits::input_parameter< double >::type beta_max(beta_maxSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const List& >::type modes(modesSEXP);
+    Rcpp::traits::input_parameter< const List& >::type L_inv(L_invSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type ldet_L_inv(ldet_L_invSEXP);
+    rcpp_result_gen = Rcpp::wrap(rj_lps_q_cpp(x_curr, x_prop, beta_max, w, modes, L_inv, ldet_L_inv));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_tempeRing_logsumexp_cpp", (DL_FUNC) &_tempeRing_logsumexp_cpp, 1},
@@ -273,6 +340,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tempeRing_modAssignment_cpp", (DL_FUNC) &_tempeRing_modAssignment_cpp, 6},
     {"_tempeRing_lpsampler_cpp", (DL_FUNC) &_tempeRing_lpsampler_cpp, 5},
     {"_tempeRing_lps_q_cpp", (DL_FUNC) &_tempeRing_lps_q_cpp, 7},
+    {"_tempeRing_modAssignment_RJMCMC_cpp", (DL_FUNC) &_tempeRing_modAssignment_RJMCMC_cpp, 8},
+    {"_tempeRing_rj_rmvtnorm_temp_cpp", (DL_FUNC) &_tempeRing_rj_rmvtnorm_temp_cpp, 7},
+    {"_tempeRing_rj_lpsampler_cpp", (DL_FUNC) &_tempeRing_rj_lpsampler_cpp, 5},
+    {"_tempeRing_rj_lps_q_cpp", (DL_FUNC) &_tempeRing_rj_lps_q_cpp, 7},
     {NULL, NULL, 0}
 };
 

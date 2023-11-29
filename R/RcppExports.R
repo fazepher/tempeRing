@@ -65,3 +65,19 @@ lps_q_cpp <- function(x_curr, x_prop, beta_max, w, modes, L_inv, ldet_L_inv) {
     .Call(`_tempeRing_lps_q_cpp`, x_curr, x_prop, beta_max, w, modes, L_inv, ldet_L_inv)
 }
 
+modAssignment_RJMCMC_cpp <- function(x, x_tilde, beta, l_target_modes, modes_idxs, modes_tilde, L_inv, n_modes) {
+    .Call(`_tempeRing_modAssignment_RJMCMC_cpp`, x, x_tilde, beta, l_target_modes, modes_idxs, modes_tilde, L_inv, n_modes)
+}
+
+rj_rmvtnorm_temp_cpp <- function(n, r, mu, beta = 1.0, global_scale = 1.0, sigma = NULL, L = NULL) {
+    .Call(`_tempeRing_rj_rmvtnorm_temp_cpp`, n, r, mu, beta, global_scale, sigma, L)
+}
+
+rj_lpsampler_cpp <- function(x_curr, beta_max, w, modes_tilde, L) {
+    .Call(`_tempeRing_rj_lpsampler_cpp`, x_curr, beta_max, w, modes_tilde, L)
+}
+
+rj_lps_q_cpp <- function(x_curr, x_prop, beta_max, w, modes, L_inv, ldet_L_inv) {
+    .Call(`_tempeRing_rj_lps_q_cpp`, x_curr, x_prop, beta_max, w, modes, L_inv, ldet_L_inv)
+}
+
