@@ -1,5 +1,5 @@
 
-##### Basic Normal log densities and samplers #####
+#### Basic Normal log densities and samplers ####
 
 #' Tempered Normal log densities and sampler
 #'
@@ -111,7 +111,7 @@ lnorm <- function(x, mean = 0, sd = 1){
 }
 
 
-##### Basic Multivariate normal log densities and samplers ####
+#### Basic Multivariate normal log densities and samplers ####
 
 #' Multivariate Tempered Normal log densities and sampler
 #'
@@ -126,22 +126,22 @@ lnorm <- function(x, mean = 0, sd = 1){
 #' @details
 #' Tempering a distribution means raising its density to a power \eqn{\beta>0},
 #' known as inverse temperature. Equivalently, we multiply the log-density by \eqn{\beta}:
-#' \deqn{f_\beta(x) = f(x)^\beta}
-#' \deqn{l_\beta(x) = \beta l(x)}
+#' \deqn{f(x ; \beta) = f(x)^\beta}
+#' \deqn{l(x ; \beta) = \beta \; l(x)}
 #' Consider a \eqn{d}-dimensional multivariate normal random variable centered at \eqn{\mu} with
 #' covariance matrix \eqn{\Sigma}, where \eqn{cte} represents the the normalizing constant
-#' \deqn{X ~ MVN(\mu, \Sigma)}
-#' \deqn{l(x) = -0.5(x-\mu)^T\Sigma^-1(x-\mu) + cte}
+#' \deqn{X \sim N_d(\mu, \Sigma)}
+#' \deqn{l(x) = cte -\dfrac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu)}
 #' Its tempered version is equivalent to rescaling with new covariance matrix \eqn{\Sigma/\beta}
 #' and keeping the same mean parameter:
-#' \deqn{l_\beta(x) = -\beta 0.5 (x-\mu)^T \Sigma^-1 (x-\mu)  + cte' }
-#' \deqn{l_\beta(x) = -0.5 (x-\mu)^T (\Sigma/\beta)^-1 (x-\mu) + cte'}
-#' \deqn{X|\beta ~ MVN(\mu, \Sigma/\beta)}
+#' \deqn{l(x ; \beta) = cte' - \dfrac{\beta}{2} (x-\mu)^T \Sigma^{-1} (x-\mu)}
+#' \deqn{l(x ; \beta) = cte' - \dfrac{1}{2}(x-\mu)^T \left[\dfrac{1}{\beta}\;\,\Sigma\;\,\right]^{-1} (x-\mu)}
+#' \deqn{X|\beta ~ N_d\left(\mu,\;\dfrac{1}{\beta}\Sigma\;\right)}
 #'
 #' Now, the multivariate normal density only depends on \eqn{\Sigma} through its inverse
-#' \eqn{\Sigma^-1} in the kernel term and determinant in the normalizing constant
-#' \deqn{cte = -0.5(d log(2\pi) + log( det(\Sigma) )}
-#' For this reason, instead of providing the covariance matrix `sigma`, the user can provide both via
+#' \eqn{\Sigma^{-1}} in the kernel term and determinant in the normalizing constant
+#' \deqn{cte = -\dfrac{1}{2}\left[d \; \log (2\pi) + \log \left( |\Sigma| \right)\,\right]}
+#' For this reason, instead of providing the covariance matrix `sigma`, the user can provide both
 #' `sigma_inv` and `logdet_sigma`, saving the functions the need to compute them under the hood.
 #'
 #' Another way of thinking of a Multivariate Normal random variable is to consider a Cholesky
@@ -163,7 +163,8 @@ lnorm <- function(x, mean = 0, sd = 1){
 #'
 #' @returns
 #' The preffix `l` stands for log-density, `d` for density, and `r` for sampling.
-#' `lnorm` gives the log-density of a regular normal without tempering (i.e. \eqn{\beta = 1}).
+#' `lmvtnorm` gives the log-density of a regular normal without tempering (i.e. \eqn{\beta = 1}),
+#' and by default assumes standard normals, i.e. mean 0 and identity covariance.
 #' See [stats::dnorm()] for more information. When sampling `n`> 1 realizations,
 #' the resulting matrix has `n` rows and `d` columns.
 #'
@@ -287,7 +288,7 @@ rmvtnorm <- function(n, mu = 0, sigma = NULL, LChol_sigma = NULL){
   rmvtnorm_temp(n = n, mu = mu, sigma = sigma, LChol_sigma = LChol_sigma)
 }
 
-####  General mixture distribution ####
+#### General mixture distribution ####
 
 #' General Finite Mixture log densities and samplers
 #'
@@ -304,8 +305,9 @@ rmvtnorm <- function(n, mu = 0, sigma = NULL, LChol_sigma = NULL){
 #'
 #' For numerical reasons, it is recommended to work on the log-scale so that for a desired
 #' distribution, the corresponding mixture can be generated from the log-densities
-#' \eqn{l(x|\theta) = log( f(x | theta))}, via de Log-Sum-Exp form (see [matrixStats::logSumExp]):
-#' \deqn{l(x|w,\Theta) = LSE[log(w_k) + l(x)|\theta_k)] over k = 1,... K}
+#' \eqn{l(x|\theta) = \log\left[ f(x | \theta)\right]}, via the Log-Sum-Exp form
+#' (see [matrixStats::logSumExp]):
+#' \deqn{l(x|w,\Theta) = LSE[\,log(w_k) + l(x|\theta_k)\,]_{k=1}^K }
 #'
 #' # Component Parameters
 #'
@@ -342,9 +344,9 @@ rmvtnorm <- function(n, mu = 0, sigma = NULL, LChol_sigma = NULL){
 #'
 #' ```
 #'
-#' The behavior for generating random samples is different, though. As each sample is only
+#' The behavior for generating random samples is different, though, as each sample is only
 #' generated from a given component and there is, in general, no need to sweep through the parameters
-#' of each component. For this reason, in this case component parameters are passed as a single linst
+#' of each component. For this reason, here component parameters are passed as a single list
 #' in which each element contains the parameters of each component. In the multivariate normal mixture
 #' scenario this is:
 #'
@@ -513,7 +515,7 @@ ulmix_norm_temp <- function(x, beta = 1, w, mean, sd = NULL, shared_sd = 1){
 #' regular mixture of multivariate normals, corresponding to `lmix_mvtnorm`,
 #' as tempering a multivariate normal just rescales it (see [lmvtnorm_temp]).
 #'
-#' ## Component Parameters
+#' # Component Parameters
 #'
 #' See the documentation for [lmix] for a lengthier exposition of the difference between passing
 #' arguments via `...` or `shared_args`, while the documentation of [lmvtnorm] explains the specific
@@ -609,21 +611,22 @@ l_temp <- function(x, beta = 1, ldens, ..., z = NULL){
 #' Unnormalized and normalized log-tempered densities from a mixture of a user defined
 #' **log-density**.
 #'
-#' While mixing densities still yields a normalized density, tempering *does not* do so
+#' While mixing normalized densities still yields a normalized density, tempering *does not* do so
 #' and requires renormalization. Hence, the direct result of tempering is the unnormalized
 #' `ulmix_temp`. The normalized version `lmix_temp` is provided mainly for **univariate** log-densities,
 #' where internal numerical integration is used via `stats::integrate`.
 #'
-#' ## Component Parameters
+#' # Component Parameters
 #'
 #' Same behavior as [lmix]: `...` expects iterable arguments to be swept across all components while
 #' `shared_args` is a list of shared arguments across components.
 #' For a more detailed explanation please see the documentation and examples in [lmix].
 #'
 #' @details
+#'
 #' When using `lmix_temp` for general *multivariate* mixtures, the user should provide the
-#' normalizing constant `log_z` (in the log scale). This parameter can also be useful for efficiency in
-#' one-dimensional situations, as one would avoid estimating it at every call.
+#' normalizing constant `log_z` (in the log scale). Providing the correct value for this argument
+#' is advisable for efficiency in one-dimensional situations, as to avoid estimating it at every call.
 #' Note, however, that many tasks in the context of the package don't necessarily require the
 #' normalized version; this function is provided for completeness and as a tool
 #' for those situations were the normalized versions are indeed sought.
@@ -648,9 +651,9 @@ ulmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL){
 
 #' @rdname ulmix_temp
 #'
-#' @param log_z For `lmix_temp`, normalizing constant. If NULL (the default) it is estimated
-#' via `stats::integrate`. Hence, while optional for univariate mixtures, it is necessary
-#' for proper behavior on multivariate mixtures (see Details).
+#' @param log_z For `lmix_temp`, normalizing constant in log-scale. If NULL (the default) it is estimated
+#' via `stats::integrate`. Hence, while optional for univariate mixtures, it is strongly recommended
+#' for efficiency and it is necessary for proper behavior on multivariate mixtures (see Details).
 #'
 #' @export
 #'
@@ -676,22 +679,87 @@ lmix_temp <- function(x, beta = 1, w, ldens, ..., shared_args = NULL, log_z = NU
 
 }
 
-#### Tawn et al's Skew Normal ####
+#### Some Skew Normal densities ####
 
+#'
+#' Skew Normal log-density and mixtures
+#'
+#' @description
+#' Log-density of univariate skew normal distribution and multivariate version-
+#' but with independent components- as well as mixture and unnormalized tempered mixture
+#' of this multivariate product form of skew normals.
+#'
+#' # Component Parameters
+#'
+#' Same behavior as [lmix]: `...` expects iterable arguments to be swept across all components while
+#' `shared_args` is a list of shared arguments across components.
+#' For a more detailed explanation please see the documentation and examples in [lmix].
+#'
+#' @details
+#'
+#' The skew normal distribution is parametrized by a real location, positive scale and real skewness
+#' parameters denoted \eqn{m,\,s,\,a} respectively with the following density
+#' \deqn{\tilde{\phi}_{sn}(x | m, s, a) = \dfrac{2}{s}\,\phi\left(\dfrac{x-m}{s}\right)\Phi\left[a\,\dfrac{x-m}{s}\right],}
+#' where \eqn{\phi} and \eqn{\Phi} are the density and CDF of a standard normal random variable.
+#'
+#' The product form of skew normals implemented here is then parametrized by corresponding vectors of
+#' the above three parameters denoted \eqn{\mu, \sigma, \alpha} to offer maximum flexibility in the behaviour
+#' of the components:
+#' \deqn{f(x | \mu, \sigma, \alpha) = \prod\limits_{i=1}^d \tilde{\phi}_{sn}(x_i | \mu_i, \sigma_i, \alpha_i)}
+#'
+#' The \eqn{K}-component mixture density and tempered mixture unnormalized density are accordingly
+#' defined on top of the above multivariate product form:
+#' \deqn{f_K(x | w, \theta) = \sum\limits_{k=1}^K w_k\,f(x | \mu_k, \sigma_k, \alpha_k) = \sum\limits_{k=1}^K w_k\,\prod\limits_{i=1}^d \tilde{\phi}_{sn}(x_i | \mu_{k,i}, \sigma_{k,i}, \alpha_{k,i})}
+#' \deqn{\tilde{f}_K(x | w, \theta, \beta) \propto f_K(x | w, \theta)^\beta}
+#' where to simplify notation we gather all the mixture component parameters \eqn{\mu, \sigma, \alpha}
+#' into the single parameter \eqn{\theta}.
+#'
+#' @param x Vector of quantiles for `lskewnorm` or single multivariate quantile for `lhatskewnorm`
+#' @param m Location parameter of univariate skew normal
+#' @param mu Location vector parameter of multivariate independent skew normal
+#' @param s Positive scale parameter of univariate skew normal
+#' @param sigma Positive scale vector parameter of multivariate independent skew normal
+#' @param a Skewness parameter of univariate skew normal
+#' @param alpha Skewness vector parameter of multivariate independent skew normal
+#'
+#' @returns
+#' `lskewnorm` returns the log-density of a univariate skew normal, `lhatskewnorm` the log-density of
+#' a product form multivariate skew normal (i.e. sum of independent skew normal log-densities), while
+#' `lmix_hatskewnorm` and `ulmix_hatskewnorm_temp` return the normalized log-density and unnormalized
+#' tempered log-density of a mixture of product form multivariate skew normals respectively.
+#'
+#' @seealso [lmix] [ulmix_norm_temp]
+#'
+#' @export
+#'
 lskewnorm <- function(x, m, s, a){
   log(2) - log(s) + lnorm((x-m)/s) + stats::pnorm(a*(x-m)/s, log.p = TRUE)
 }
 
+#' @rdname lskewnorm
+#'
+#' @export
+#'
 lhatskewnorm <- function(x, mu, sigma, alpha){
   sum(lskewnorm(x, mu, sigma, alpha))
 }
 
+#' @rdname lskewnorm
+#'
+#' @param w A vector of non-negative mixture weights. To be a valid mixture they must sum to 1.
+#' @param ... Other arguments passed on to `lhatskewnorm` that vary by mixture component
+#' (see the Component Parameters).
+#' @param shared_args List of other arguments passed on to `lhatskewnorm` who are shared
+#' by all mixture components (see Component Parameters).
+#' @export
+#'
 lmix_hatskewnorm <- function(x, w = rep(0.25, 4), ..., shared_args = list(alpha = 2)){
   lmix(x, w, lhatskewnorm, ..., shared_args = shared_args)
 }
 
+#' @rdname lskewnorm
 #'
-#' Mixture of Skew Normals from HAT and ALPS papers
+#' @param beta Inverse temperature parameter \eqn{\beta > 0}.
 #'
 #' @export
 #'

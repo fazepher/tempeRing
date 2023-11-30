@@ -49,8 +49,8 @@ The tempering in \code{ulmix_mvtnorm_temp} is done \emph{after} the mixture; thi
 with a mixture of tempered multivariate normals. This latter scenario would just be a
 regular mixture of multivariate normals, corresponding to \code{lmix_mvtnorm},
 as tempering a multivariate normal just rescales it (see \link{lmvtnorm_temp}).
-\subsection{Component Parameters}{
-
+}
+\section{Component Parameters}{
 See the documentation for \link{lmix} for a lengthier exposition of the difference between passing
 arguments via \code{...} or \code{shared_args}, while the documentation of \link{lmvtnorm} explains the specific
 parameters available for the multivariate normal components of the mixture. These may typically
@@ -58,4 +58,4 @@ be lists for \code{mu} and \code{sigma}, passed through the \code{...} argument.
 the same for each component (or for the common dimension parameter \code{d}), the \code{shared_args}
 list would be useful.
 }
-}
+
