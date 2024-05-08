@@ -1,22 +1,25 @@
 test_that("Metropolis-Hastings step works", {
 
   # We should always accept a same-place move
-  expect_identical(mh_step(x_curr = 0,
-                           x_prop = 0,
-                           l_curr = stats::dnorm(0, log = TRUE),
-                           l_prop = stats::dnorm(0, log = TRUE),
-                           lq_c2p = stats::dnorm(0, mean = 0, log = TRUE),
-                           lq_p2c = stats::dnorm(0, mean = 0, log = TRUE)),
-                   list(x_next = 0,
-                        l_next = stats::dnorm(0, log = TRUE),
-                        accepted = TRUE))
+  expect_identical(
+    mh_step(x_curr = 0,
+            x_prop = 0,
+            l_curr = stats::dnorm(0, log = TRUE),
+            l_prop = stats::dnorm(0, log = TRUE),
+            lq_c2p = stats::dnorm(0, mean = 0, log = TRUE),
+            lq_p2c = stats::dnorm(0, mean = 0, log = TRUE)) |>
+      (\(x) x[c("x_next","l_next","accepted")])(),
+    list(x_next = 0,
+         l_next = stats::dnorm(0, log = TRUE),
+         accepted = TRUE))
 
   expect_identical(mh_step(x_curr = matrix(0, nrow = 5),
                            x_prop = matrix(0, nrow = 5),
                            l_curr = rep(stats::dnorm(0, log = TRUE), 5),
                            l_prop = rep(stats::dnorm(0, log = TRUE), 5),
                            lq_c2p = rep(stats::dnorm(0, mean = 0, log = TRUE), 5),
-                           lq_p2c = rep(stats::dnorm(0, mean = 0, log = TRUE), 5)),
+                           lq_p2c = rep(stats::dnorm(0, mean = 0, log = TRUE), 5)) |>
+                     (\(x) x[c("x_next","l_next","accepted")])(),
                    list(x_next = matrix(0, nrow = 5),
                         l_next = rep(stats::dnorm(0, log = TRUE), 5),
                         accepted = rep(TRUE, 5)))
@@ -27,7 +30,8 @@ test_that("Metropolis-Hastings step works", {
                            l_curr = stats::dnorm(1, log = TRUE),
                            l_prop = stats::dnorm(0, log = TRUE),
                            lq_c2p = stats::dnorm(0, mean = 1, log = TRUE),
-                           lq_p2c = stats::dnorm(1, mean = 0, log = TRUE)),
+                           lq_p2c = stats::dnorm(1, mean = 0, log = TRUE)) |>
+                     (\(x) x[c("x_next","l_next","accepted")])(),
                    list(x_next = 0,
                         l_next = stats::dnorm(0, log = TRUE),
                         accepted = TRUE))
@@ -36,7 +40,8 @@ test_that("Metropolis-Hastings step works", {
                            l_curr = rep(stats::dnorm(1, log = TRUE), 3),
                            l_prop = rep(stats::dnorm(0, log = TRUE), 3),
                            lq_c2p = rep(stats::dnorm(0, mean = 1, log = TRUE), 3),
-                           lq_p2c = rep(stats::dnorm(1, mean = 0, log = TRUE), 3)),
+                           lq_p2c = rep(stats::dnorm(1, mean = 0, log = TRUE), 3),
+                           full_return = FALSE),
                    list(x_next = rep(0, 3),
                         l_next = rep(stats::dnorm(0, log = TRUE), 3),
                         accepted = rep(TRUE, 3)))
@@ -47,7 +52,8 @@ test_that("Metropolis-Hastings step works", {
   expect_identical(mh_step(x_curr = 0,
                            x_prop = 1000,
                            l_curr = stats::dnorm(0, log = TRUE),
-                           l_prop = stats::dnorm(1000, log = TRUE)),
+                           l_prop = stats::dnorm(1000, log = TRUE)) |>
+                     (\(x) x[c("x_next","l_next","accepted")])(),
                    list(x_next = 0,
                         l_next = stats::dnorm(0, log = TRUE),
                         accepted = FALSE))
@@ -95,7 +101,8 @@ test_that("Sampling function works",{
        mh_sampling_step(x_curr = x$x_next, l_curr = x$l_next,
                         l_target = stats::dnorm, mean = 25, log = TRUE,
                         sampler = function(x, scale) stats::rnorm(n = 1, mean = x, sd = scale),
-                        sampler_args = list(scale = 3))
+                        sampler_args = list(scale = 3),
+                        full_return = FALSE)
        )(),
     c("x_next", "l_next", "accepted")
   )
@@ -109,21 +116,25 @@ test_that("Metropolis is a good wrapper of MH", {
                            l_curr = stats::dnorm(0, log = TRUE),
                            l_prop = stats::dnorm(0, log = TRUE),
                            lq_c2p = stats::dnorm(0, mean = 0, log = TRUE),
-                           lq_p2c = stats::dnorm(0, mean = 0, log = TRUE)),
+                           lq_p2c = stats::dnorm(0, mean = 0, log = TRUE),
+                           full_return = FALSE),
                    metropolis_step(x_curr = 0,
                                    x_prop = 0,
                                    l_curr = stats::dnorm(0, log = TRUE),
-                                   l_prop = stats::dnorm(0, log = TRUE)))
+                                   l_prop = stats::dnorm(0, log = TRUE),
+                                   full_return = FALSE))
 
   expect_identical(mh_step(x_curr = matrix(0, nrow = 5),
                            x_prop = matrix(0, nrow = 5),
                            l_curr = rep(stats::dnorm(0, log = TRUE), 5),
                            l_prop = rep(stats::dnorm(0, log = TRUE), 5),
                            lq_c2p = rep(stats::dnorm(0, mean = 0, log = TRUE), 5),
-                           lq_p2c = rep(stats::dnorm(0, mean = 0, log = TRUE), 5)),
+                           lq_p2c = rep(stats::dnorm(0, mean = 0, log = TRUE), 5),
+                           full_return = FALSE),
                    metropolis_step(x_curr = matrix(0, nrow = 5),
                                    x_prop = matrix(0, nrow = 5),
                                    l_curr = rep(stats::dnorm(0, log = TRUE), 5),
-                                   l_prop = rep(stats::dnorm(0, log = TRUE), 5)))
+                                   l_prop = rep(stats::dnorm(0, log = TRUE), 5),
+                                   full_return = FALSE))
 
 })

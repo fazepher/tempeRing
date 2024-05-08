@@ -12,6 +12,7 @@ The goal of tempeRing is to provide an R package for my Summer Tempering project
 Useful links:
 \itemize{
   \item \url{https://github.com/fazepher/tempeRing}
+  \item \url{https://fazepher.github.io/tempeRing/}
   \item Report bugs at \url{https://github.com/fazepher/tempeRing/issues}
 }
 

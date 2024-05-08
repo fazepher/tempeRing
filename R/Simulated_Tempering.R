@@ -1,4 +1,33 @@
 
+#' Simulated Tempering
+#'
+#' @param l_target A function returning the log-density of the target (possibly up to a normalizing constant)
+#' which is suitable for tempering. This is, its first argument should accept the state and its second argument
+#' should accept an inverse-temperature parameter beta.
+#' @param ... (Optional) Further arguments passed on to `l_target`
+#' @param beta_schedule The vector of inverse-temperatures to be used for tempering.
+#' @param g_schedule (Optional) A vector of Simulated Tempering auxiliary constants.
+#' If ommited, they are all fixed to 0.
+#' @param scale Scale parameter for the Random Walk Metropolis within-temperature exploration moves.
+#' @param Temp_Moves Number of temperature moves to attempt
+#' @param Within_Moves Number of within-temperature exploration moves to conduct after each temperature move.
+#' @param burn_cycles Burn-in cycles
+#' @param x_0 (Optional) Starting state for the chain
+#' @param x_0_u (Default = 2) Whenever `x_0` is not specified, a starting state is
+#' uniformly sampled between -`x_0_u` and `x_0_u` (independently in each dimension).
+#' @param k_0 (Optional) Starting temperature index.
+#' @param l_0 (Optional) Precomputed log-density value at the starting state and temperature level.
+#' @param seed (Optional) Seed to be set using `set.seed()`.
+#' @param custom_rw_sampler (Optional) User-specified RWM sampler(s) for the within-temperature moves.
+#' See `Details` for more.
+#' @param target_names (Optional) Names for the states components.
+#' @param d (Optional) Dimensionality of the problem.
+#' @param silent (Default = FALSE) Should the algorithm avoid printing messages?
+#'
+#' @return
+#' @export
+#'
+#' @examples
 ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
                          scale = 1, Temp_Moves = 1000, Within_Moves = 10, burn_cycles = 0,
                          x_0 = NULL, x_0_u = 2, k_0 = NULL, l_0 = NULL, seed = NULL,
@@ -35,7 +64,7 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
   # Checking for valid sample sizes
   stopifnot(Temp_Moves >= 1)
   stopifnot(Within_Moves >= 1)
-  stopifnot(0 <= burn_cycles && burn_cycles < Temp_Moves)
+  stopifnot(-1 <= burn_cycles && burn_cycles < Temp_Moves)
 
   # If the user didn't we define proposal sampler(s) as indep. normals
   if(is.list(custom_rw_sampler)){
@@ -126,6 +155,10 @@ ST_rwm_chain <- function(l_target, ..., beta_schedule, g_schedule = NULL,
     cat("Finished Sampling", sep = "\n")
     cat(paste("Swap Acceptance Rates:", round(swap_acc_rates,3)), sep = "\n")
     cat(paste("RWM Acceptance Rates:", round(rwm_acc_rates,3)), sep = "\n")
+  }
+
+  if(burn_cycles == -1){
+    return(mget(c("x", "k", "l", "swap_acc", "swap_acc_rates", "rwm_acc", "rwm_acc_rates")))
   }
 
   x_r <- x[-seq(1,burn_cycles*cycle_length + 1), ]

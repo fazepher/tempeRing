@@ -690,6 +690,11 @@ lmix_hatskewnorm <- function(x, w = rep(0.25, 4), ..., shared_args = list(alpha 
   lmix(x, w, lhatskewnorm, ..., shared_args = shared_args)
 }
 
+#'
+#' Mixture of Skew Normals from HAT and ALPS papers
+#'
+#' @export
+#'
 ulmix_hatskewnorm_temp <- function(x, beta = 1, w = rep(0.25, 4), ...,
                                    shared_args = list(alpha = 2)){
   beta*lmix_hatskewnorm(x, w, ..., shared_args = shared_args)

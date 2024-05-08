@@ -19,7 +19,7 @@ LazyData: true
 URL: https://github.com/fazepher/tempeRing,
     https://fazepher.github.io/tempeRing/
 BugReports: https://github.com/fazepher/tempeRing/issues
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 Roxygen: list(markdown = TRUE)
 Suggests: 
     ggplot2,
@@ -28,10 +28,13 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Imports: 
+    future,
+    future.apply,
     matrixStats,
-    mvtnorm,
-    pracma,
-    purrr,
+    Rcpp,
     rlang,
     stats
 VignetteBuilder: knitr
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo
