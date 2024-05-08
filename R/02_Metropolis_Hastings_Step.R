@@ -9,6 +9,11 @@
 #' * Both `metropolis_step()` and `metropolis_sampling_step()` are just wrappers for symmetric
 #' transition kernels.
 #'
+#' # Rcpp
+#'
+#'  The functions with the suffix `_cpp` internally call functions in C++ via `Rcpp` and should be
+#'  more efficient.
+#'
 #' # Dimension
 #'
 #' We want to perform MH steps on `C` states, so all log-density inputs are vectors of length `C`.
@@ -29,12 +34,12 @@
 #' The output element `x_next` is always of the same structure as the input `x_curr`.
 #'
 #' # The Metropolis-Hastings Ratio
-#' The usual form of the MH acceptance probability \eqn{\alpha = min{1, MH ratio}},
+#' The usual form of the MH acceptance probability \eqn{\alpha = \min \lbrace 1, r \rbrace },
 #' relies on the ratio
-#' \deqn{ MH ratio = \pi(x_1) q(x_0|x_1) / \pi(x_0) q(x_1|x_0) }
+#' \deqn{ r = \pi(x_1) q(x_0|x_1) / \pi(x_0) q(x_1|x_0) }
 #' to satisfy detail balance.
 #' For numerical reasons, we wish to work on the log scale and the ratio becomes
-#' \deqn{ MH log-ratio =  l(x_1) + lq(x_0|x_1) - l(x_0) - lq(x_1|x_0) }
+#' \deqn{ \log(r) =  l(x_1) + lq(x_0|x_1) - l(x_0) - lq(x_1|x_0) }
 #' Whenever the transition kernel is symmetrical (i.e. \eqn{q(x_0|x_1)=q(x_1|x_0)})
 #' we can omit those terms from the calculation and recover the original Metropolis et. al ratio.
 #' This is the default assumption of the `mh_step()` function.
@@ -241,6 +246,10 @@ metropolis_sampling_step <- function(x_curr, l_curr, l_target, ..., sampler, sam
 
 ####--- Llama a C++ interno ---####
 
+#'
+#' @rdname mh_step
+#' @export
+#'
 mh_sampling_step_cpp <- function(x_curr, l_curr, l_target, ..., sampler, sampler_args = NULL,
                                  lq_sampler = NULL, lq_sampler_args = NULL){
 
@@ -259,6 +268,10 @@ mh_sampling_step_cpp <- function(x_curr, l_curr, l_target, ..., sampler, sampler
 
 }
 
+#' @rdname mh_step
+#'
+#' @export
+#'
 metropolis_sampling_step_cpp <- function(x_curr, l_curr, l_target, ...,
                                          sampler, sampler_args = NULL){
 

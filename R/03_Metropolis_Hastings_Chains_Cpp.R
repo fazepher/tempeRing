@@ -105,6 +105,7 @@ rwm_global_scale_sampler_leaner_chain <- function(l_target, d, ...,
 
 }
 
+#' @export
 mh_sampler_leaner_chain_cpp <- function(l_target, d, ...,
                                         mh_sampler, other_sampler_args = NULL,
                                         lq_mh, other_lq_args = NULL,
