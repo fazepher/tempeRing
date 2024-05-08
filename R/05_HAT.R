@@ -1,4 +1,6 @@
 
+####--- Original ---####
+
 #' @export
 get_HAT_info <- function(mode_guess, l_target, ..., beta_hat = NULL,
                          optimize = TRUE, method = "BFGS", control_optim = list(fnscale = -1),
@@ -42,13 +44,9 @@ modAssignment <- function(x, beta, HAT_info, assign_type){
   if(assign_type == "euclidean"){
     return(modAssignment_euclidean(x, beta, HAT_info))
   }
-  if(assign_type == "euclidean_cpp"){
-   return(modAssignment_euclidean_cpp(x, beta, HAT_info$w, HAT_info$modes,
-                                      HAT_info$L_inv, HAT_info$ldet_L_inv))
-  }
-  if(assign_type == "mahalanobis_cpp"){
-    return(modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
-                                         HAT_info$L_inv, length(HAT_info$w)))
+  if(assign_type == "cpp"){
+    return(modAssignment_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                             HAT_info$L_inv, length(HAT_info$w)))
   }
 }
 
@@ -90,31 +88,6 @@ lHAT_target <- function(x, beta, HAT_info, ltemp_target, ..., silent = FALSE){
 
 }
 
-lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
-
-  # Standard power tempering
-  l_eval <- ltemp_target(x, beta = beta, ...)
-
-  # Mode assignment
-  mod_assign_maha <- prev_mod_assign_maha %||%
-    modAssignment_mahalanobis_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
-                                  HAT_info$L_inv, length(HAT_info$w))
-  # Early exit if beta is 1
-  if(beta == 1){
-    return(l_eval)
-  }
-
-  # If mode assignment is the same, we do BHAT
-  if(mod_assign_maha$A_beta == mod_assign_maha$A_1){
-    return(l_eval + (1-beta)*mod_assign_maha$l_target_mu)
-  }
-
-  # Otherwise we use function G
-  return(mod_assign_maha$G_x_beta)
-
-}
-
-
 #' @export
 HAT_rwm_chain <- function(ltemp_target, ..., HAT_info,
                           beta_schedule, swap_type = "deo",
@@ -132,5 +105,59 @@ HAT_rwm_chain <- function(ltemp_target, ..., HAT_info,
                      custom_rw_sampler = custom_rw_sampler, target_names = target_names, d = d,
                      silent = silent))
   do.call(PT_rwm_chain, hat_args)
+
+}
+
+####--- Llama a C++ interno ---####
+
+lHAT_target_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
+
+  # Standard power tempering
+  l_eval <- ltemp_target(x, beta = beta, ...)
+
+  # Mode assignment
+  mod_assign_maha <- prev_mod_assign_maha %||%
+    modAssignment_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                      HAT_info$L_inv, length(HAT_info$w))
+  # Early exit if beta is 1
+  if(beta == 1){
+    return(l_eval)
+  }
+
+  # If mode assignment is the same, we do BHAT
+  if(mod_assign_maha$A_beta == mod_assign_maha$A_1){
+    return(l_eval + (1-beta)*mod_assign_maha$l_target_mu)
+  }
+
+  # Otherwise we use function G
+  return(mod_assign_maha$G_x_beta)
+
+}
+
+####--- Byproduct (FALLANDO) ---####
+lHAT_target_byprod_cpp <- function(x, beta, HAT_info, ltemp_target, ..., prev_mod_assign_maha = NULL){
+
+  # Standard power tempering
+  l_eval <- ltemp_target(x, beta = beta, ...)
+
+  # Mode assignment
+  mod_assign_maha <- prev_mod_assign_maha %||%
+    modAssignment_cpp(x, beta, HAT_info$l_target_modes, HAT_info$modes,
+                      HAT_info$L_inv, length(HAT_info$w))
+  by_prod <- unlist(mod_assign_maha, use.names = FALSE)
+
+  # Early exit if beta is 1
+  if(beta == 1){
+    return(list(l_eval = l_eval, by_prod = by_prod))
+  }
+
+  # If mode assignment is the same, we do BHAT
+  if(mod_assign_maha$A_beta == mod_assign_maha$A_1){
+    return(list(l_eval = l_eval + (1-beta)*mod_assign_maha$l_target_mu,
+                by_prod = by_prod))
+  }
+
+  # Otherwise we use function G
+  return(list(l_eval = mod_assign_maha$G_x_beta, by_prod = by_prod))
 
 }
