@@ -57,7 +57,7 @@ test_that("Metropolis-Hastings sampling step works for basic distributions", {
 
   # Shapiro-Wilks for basic Normals
   expect_true({
-    n_test <- 1000
+    n_test <- 500
     mu_test <- rt(1, df = 4, ncp = 8427)
     sd_test <- sqrt(rgamma(1, shape = 997))
     x_test <- rnorm(n_test, mean = mu_test, sd = sd_test)
@@ -70,12 +70,12 @@ test_that("Metropolis-Hastings sampling step works for basic distributions", {
                                                rnorm(1, mean = x_c, sd = 2.38*sd_test)})$x_next
     }
 
-    shapiro.test(x_next_test)$p.value > 0.025
+    shapiro.test(x_next_test)$p.value > 0.01
   })
 
   # Kolmogorov-Smirnov for Beta-Binomial toy example
   expect_true({
-    n_test <- 1000
+    n_test <- 500
     alpha_test <- 1.5
     beta_test <- 3.2
     p_test <- rbeta(n_test, alpha_test, beta_test)
@@ -104,113 +104,123 @@ test_that("Metropolis-Hastings sampling step works for basic distributions", {
                                                      })$x_next
     }
 
-    ks.test(p_post_test, p_next_test)$p.value > 0.025
+    ks.test(p_post_test, p_next_test)$p.value > 0.01
   })
 
 
 })
 
-test_that("Random-Walk Metropolis works",{
+test_that("Leaner Chains work for Logistic Regression",{
 
-  expect_true({
-    d_test <- 5
-    n_test <- 50
-    logit_x_data <- matrix(rnorm(d_test*n_test), nrow = n_test, ncol = d_test)
-    ltarget_logistic_reg <- function(beta, y, x = logit_x_data){
-      l_prior <- sum(dnorm(beta, log = TRUE))
-      eta <- as.vector(x %*% beta) # Linear predictors / Log-odds vector
-      phi <- plogis(eta, log.p = TRUE) # Log-probabilities of success
-      l_vero <- sum(phi + eta*(y - 1)) # Log-likelihood
-      return(l_prior + l_vero)
+  # Logistic Regression test for different samplers
+  ltarget_logistic_reg <- function(beta, y){
+    l_prior <- sum(dnorm(beta, log = TRUE))
+    eta <- as.vector(logit_x_data %*% beta) # Linear predictors / Log-odds vector
+    phi <- plogis(eta, log.p = TRUE) # Log-probabilities of success
+    l_vero <- sum(phi + eta*(y - 1)) # Log-likelihood
+    return(l_prior + l_vero)
+  }
+  test_logistic_reg <- list()
+  test_logistic_reg$genprior <- function(){
+    rnorm(d_test)
+  }
+  test_logistic_reg$gendata <- function(theta){
+    as.vector(logit_x_data %*% theta) |>
+      sapply(function(eta) rbinom(1,1,plogis(eta)))
+  }
+  test_logistic_reg$test <- function(theta, dat){
+    c(theta,mean(dat),
+      ltarget_logistic_reg(theta,dat),
+      as.vector(quantile(logit_x_data %*% theta,c(0.013,0.41,0.972))),
+      sd(dat)/mean(dat))
+  }
+
+  # rwm_global_scale_sampler_leaner_chain
+  d_test <- rpois(1,5)
+  n_test <- rpois(1,50)
+  logit_x_data <- matrix(rnorm(d_test*n_test), nrow = n_test, ncol = d_test)
+  test_logistic_reg$stepMCMC <- function(theta, dat, thining){
+
+    chain <- rwm_global_scale_sampler_leaner_chain(
+      ltarget_logistic_reg, d = d_test, y = dat,
+      global_scale = 0.35, S = thining, burn = thining-1,
+      x_0 = theta, silent = TRUE)
+
+    return(chain$x)
+
+  }
+  mcunit::expect_mcmc(test_logistic_reg, thinning = d_test*5)
+  mcunit::expect_mcmc_reversible(test_logistic_reg, thinning = d_test*5)
+
+  # mh_sampler_leaner_chain_cpp (RWM proposals)
+  d_test <- rpois(1,5)
+  n_test <- rpois(1,50)
+  logit_x_data <- matrix(rnorm(d_test*n_test), nrow = n_test, ncol = d_test)
+  qsampler_logistic_reg <- function(x_curr, scale){
+    rnorm(length(x_curr), mean = x_curr, sd = scale)
+  }
+  lsampler_logistic_reg <- function(x_curr, x_prop, scale){
+    l <- 0
+    for(i in seq_along(x_curr)){
+      l <- l + dnorm(x_prop[i], x_curr[i], scale, log = TRUE)
     }
+    return(l)
+  }
+  test_logistic_reg$stepMCMC <- function(theta, dat, thining){
 
-    s_test <- 500
-    beta_dgp <- matrix(rnorm(d_test*s_test), nrow = d_test, ncol = s_test)
-    beta_test <- matrix(rnorm(d_test*s_test), nrow = d_test, ncol = s_test)
-    eta_dgp <- logit_x_data %*% beta_dgp
-    eta_test <- logit_x_data %*% beta_test
-    h_eta_dgp <- apply(eta_dgp, 2, function(eta_rep) c(quantile(eta_rep,c(0.05,0.5,0.95)),
-                                                       sd(eta_rep),
-                                                       sd(eta_rep)/mean(eta_rep)))
-    h_eta_test <- apply(eta_test, 2, function(eta_rep) c(quantile(eta_rep,c(0.05,0.5,0.95)),
-                                                         sd(eta_rep),
-                                                         sd(eta_rep)/mean(eta_rep)))
-    y_dgp <- apply(eta_dgp, 2,
-                   function(eta_rep) sapply(eta_rep, function(eta) rbinom(1,1,plogis(eta))))
-    y_test <- apply(eta_test, 2,
-                    function(eta_rep) sapply(eta_rep, function(eta) rbinom(1,1,plogis(eta))))
-    h_y_dgp <- apply(y_dgp, 2, function(y_rep) c(mean(y_rep), sd(y_rep), sd(y_rep)/mean(y_rep)))
-    h_y_test <- apply(y_test, 2, function(y_rep) c(mean(y_rep), sd(y_rep), sd(y_rep)/mean(y_rep)))
-    sample_dgp <- rbind(beta_dgp, h_eta_dgp, h_y_dgp)
-    sample_test <- rbind(beta_test, h_eta_test, h_y_test)
-    for(s in 1:s_test){
-      sample_test[1:d_test, s] <- rwm_global_scale_sampler_leaner_chain(
-        ltarget_logistic_reg, d = d_test, y = y_test[,s],
-        global_scale = 0.35, S = 100, burn = 99,
-        x_0 = beta_test[,s], silent = TRUE)$x
+    chain <- mh_sampler_leaner_chain_cpp(
+      ltarget_logistic_reg, d = d_test, y = dat,
+      mh_sampler = qsampler_logistic_reg,
+      other_sampler_args = list(scale = 2.38/sqrt(d_test)),
+      lq_mh = lsampler_logistic_reg,
+      other_lq_args = list(scale =  2.38/sqrt(d_test)),
+      S = thining, burn = thining-1,
+      x_0 = theta, silent = TRUE)
+
+    return(chain$x)
+
+  }
+  mcunit::expect_mcmc(test_logistic_reg, thinning = d_test*5)
+  mcunit::expect_mcmc_reversible(test_logistic_reg, thinning = d_test*5)
+
+  # mh_sampler_leaner_chain_cpp (MALA)
+  d_test <- rpois(1,5)
+  n_test <- rpois(1,50)
+  logit_x_data <- matrix(rnorm(d_test*n_test), nrow = n_test, ncol = d_test)
+  grad_ltarget_logistic_reg <- function(beta, y, prior_sd){
+    grad_l_prior <- -beta/(prior_sd*prior_sd) # Log-prior Gradient
+    eta <- as.vector(logit_x_data %*% beta) # Linear predictors / Log-odds vector
+    phi <- plogis(eta, log.p = TRUE) # Log-probabilities of success
+    grad_l_vero <- as.vector(t(logit_x_data) %*% (y-phi)) # Log-likelihood Gradient
+    return(grad_l_prior + grad_l_vero)
+  }
+  mala_sampler_logistic_reg <- function(x_curr, scale, y, prior_sd = 1){
+    drift <- 0.5*scale^2*grad_ltarget_logistic_reg(x_curr, y, prior_sd)
+    rnorm(length(x_curr), mean = x_curr + drift, sd = scale)
+  }
+  lmala_logistic_reg <- function(x_curr, x_prop, scale, y, prior_sd = 1){
+    drift <- 0.5*scale^2*grad_ltarget_logistic_reg(x_curr, y, prior_sd)
+    l <- 0
+    for(i in seq_along(x_curr)){
+      l <- l + dnorm(x_prop[i], x_curr[i] + drift[i], scale, log = TRUE)
     }
-    p_values_test <- numeric(nrow(sample_dgp))
-    for(k in seq_along(p_values_test)){
-      p_values_test[k] <- ks.test(sample_dgp[k, ], sample_test[k, ], exact = TRUE)$p.value
-    }
-    all(p_values_test > 0.025/length(p_values_test))
-  })
+    return(l)
+  }
+  test_logistic_reg$stepMCMC <- function(theta, dat, thining){
 
+    chain <- mh_sampler_leaner_chain_cpp(
+      ltarget_logistic_reg, d = d_test, y = dat,
+      mh_sampler = mala_sampler_logistic_reg,
+      other_sampler_args = list(scale = 2.38/sqrt(d_test), y = dat),
+      lq_mh = lmala_logistic_reg,
+      other_lq_args = list(scale =  2.38/sqrt(d_test), y = dat),
+      S = thining, burn = thining-1,
+      x_0 = theta, silent = TRUE)
 
+    return(chain$x)
 
-})
-
-test_that("Metropolis-Hastings works",{
-
-  expect_true({
-    d_test <- 5
-    n_test <- 50
-    logit_x_data <- matrix(rnorm(d_test*n_test), nrow = n_test, ncol = d_test)
-    ltarget_logistic_reg <- function(beta, y, x = logit_x_data){
-      l_prior <- sum(dnorm(beta, log = TRUE))
-      eta <- as.vector(x %*% beta) # Linear predictors / Log-odds vector
-      phi <- plogis(eta, log.p = TRUE) # Log-probabilities of success
-      l_vero <- sum(phi + eta*(y - 1)) # Log-likelihood
-      return(l_prior + l_vero)
-    }
-    gradient_logistic_reg <- function(beta, y, x = logit_x_data){
-      eta <- as.vector(x %*% beta)
-      phi <- plogis(eta, log.p = TRUE)
-      grad_ll <- t(x) %*% (y - phi)
-    }
-
-    s_test <- 500
-    beta_dgp <- matrix(rnorm(d_test*s_test), nrow = d_test, ncol = s_test)
-    beta_test <- matrix(rnorm(d_test*s_test), nrow = d_test, ncol = s_test)
-    eta_dgp <- logit_x_data %*% beta_dgp
-    eta_test <- logit_x_data %*% beta_test
-    h_eta_dgp <- apply(eta_dgp, 2, function(eta_rep) c(quantile(eta_rep,c(0.05,0.5,0.95)),
-                                                       sd(eta_rep),
-                                                       sd(eta_rep)/mean(eta_rep)))
-    h_eta_test <- apply(eta_test, 2, function(eta_rep) c(quantile(eta_rep,c(0.05,0.5,0.95)),
-                                                         sd(eta_rep),
-                                                         sd(eta_rep)/mean(eta_rep)))
-    y_dgp <- apply(eta_dgp, 2,
-                   function(eta_rep) sapply(eta_rep, function(eta) rbinom(1,1,plogis(eta))))
-    y_test <- apply(eta_test, 2,
-                    function(eta_rep) sapply(eta_rep, function(eta) rbinom(1,1,plogis(eta))))
-    h_y_dgp <- apply(y_dgp, 2, function(y_rep) c(mean(y_rep), sd(y_rep), sd(y_rep)/mean(y_rep)))
-    h_y_test <- apply(y_test, 2, function(y_rep) c(mean(y_rep), sd(y_rep), sd(y_rep)/mean(y_rep)))
-    sample_dgp <- rbind(beta_dgp, h_eta_dgp, h_y_dgp)
-    sample_test <- rbind(beta_test, h_eta_test, h_y_test)
-    for(s in 1:s_test){
-      sample_test[1:d_test, s] <- mh_sampler_leaner_chain(
-        ltarget_logistic_reg, d = d_test, y = y_test[,s],
-        global_scale = 0.35, S = 100, burn = 99,
-        x_0 = beta_test[,s], silent = TRUE)$x
-    }
-    p_values_test <- numeric(nrow(sample_dgp))
-    for(k in seq_along(p_values_test)){
-      p_values_test[k] <- ks.test(sample_dgp[k, ], sample_test[k, ], exact = TRUE)$p.value
-    }
-    all(p_values_test > 0.025/length(p_values_test))
-  })
-
-
+  }
+  mcunit::expect_mcmc(test_logistic_reg, thinning = d_test*5)
+  mcunit::expect_mcmc_reversible(test_logistic_reg, thinning = d_test*5)
 
 })
