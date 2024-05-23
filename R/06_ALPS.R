@@ -920,7 +920,7 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
                                        k_0 = NULL, custom_rw_sampler = NULL, target_names = NULL, d = NULL,
                                        quanta_mode_info = NULL,
                                        quanta_pass_prev_mod_assign = TRUE, start_deo_odd = TRUE,
-                                       silent = FALSE){
+                                       silent = FALSE, sequential_plan = is(future::plan(), "sequential")){
 
 
   #--- HAT use -------------
@@ -1066,7 +1066,6 @@ ALPS_rwm_leaner_chain_list <- function(ltemp_target, ..., HAT_info,
   # Run Cycles
   i_cycle <- 1
   j_cycle <- 1
-  sequential_plan <- is(future::plan(), "sequential") # possible parallelism
   current_deo_odd <- start_deo_odd
   for(c in 1:Cycles){
 
