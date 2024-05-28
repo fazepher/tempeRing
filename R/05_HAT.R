@@ -1,4 +1,60 @@
 
+####--- Refactor ---####
+
+#' @export
+optim_HAT <- function(mode_guesses, l_target, ...,
+                      method = "BFGS", control_optim = list(fnscale = -1)){
+  lapply(mode_guesses, function(m){
+    stats::optim(m, l_target, beta = 1, ...,
+                 method = method,
+                 control = control_optim,
+                 hessian = TRUE)})
+}
+
+#' @export
+construct_HAT_info <- function(modes, l_target_modes, hessians){
+
+  mH <- lapply(hessians, function(H) -H)
+
+  L_inv <- lapply(mH, chol)
+  ldet_L_inv <- vapply(L_inv, function(A) sum(log(diag(A))), numeric(1))
+
+  Sigma <- lapply(mH, solve)
+  L <- lapply(Sigma, chol)
+  half_l_detSigma <- vapply(L, function(A) sum(log(diag(A))), numeric(1))
+
+  l_w_tilde <- l_target_modes + half_l_detSigma
+  ls_w_tilde <- matrixStats::logSumExp(l_w_tilde)
+  w <- exp(l_w_tilde-ls_w_tilde)
+
+  return(mget(c("modes",
+                "w", "l_target_modes",
+                "L", "L_inv", "ldet_L_inv",
+                "Sigma", "half_l_detSigma",
+                "l_w_tilde", "hessians")))
+}
+
+#' @export
+obtain_HAT_info <- function(mode_guesses, l_target, ..., beta_hat = 1,
+                            method = "BFGS", control_optim = list(fnscale = -1)){
+
+  # Optimize
+  optimizations <- optim_HAT(mode_guesses, l_target, ...,
+                             beta_hat = beta_hat, method = method,
+                             control_optim = control_optim)
+
+  # Obtain inputs
+  modes <- lapply(optimizations,function(optim) optim$par)
+  l_target_modes <- vapply(optimizations, function(optim) optim$value, numeric(1))
+  hessians <- lapply(optimizations, function(optim) optim$hessian)
+
+  # Construct required structure
+  HAT_info <- construct_HAT_info(modes, l_target_modes, hessians)
+
+  return(HAT_info)
+
+}
+
 ####--- Original ---####
 
 #' @export
